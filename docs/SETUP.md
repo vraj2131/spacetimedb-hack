@@ -12,14 +12,15 @@ Use this when onboarding a teammate from a fresh clone.
 
 ## First-Time Setup
 
-```powershell
+```sh
 git clone https://github.com/vraj2131/spacetimedb-hack.git
 cd spacetimedb-hack
+curl -sSf https://install.spacetimedb.com | sh
 npm install
 cd spacetimedb
 npm install
 cd ..
-Copy-Item .env.example .env.local
+cp .env.example .env.local
 spacetime login
 ```
 
@@ -27,19 +28,19 @@ spacetime login
 
 Preferred command:
 
-```powershell
+```sh
 spacetime dev
 ```
 
 If you need to run the frontend separately:
 
-```powershell
+```sh
 npm run dev
 ```
 
 ## Verification
 
-```powershell
+```sh
 npm test
 ```
 

@@ -35,30 +35,31 @@ Not required in Phase 0:
 
 ## First-Time Setup
 
-```powershell
+```sh
 git clone https://github.com/vraj2131/spacetimedb-hack.git
 cd spacetimedb-hack
+curl -sSf https://install.spacetimedb.com | sh
 npm install
 cd spacetimedb
 npm install
 cd ..
-Copy-Item .env.example .env.local
+cp .env.example .env.local
 spacetime login
 ```
 
 Then start the local scaffold:
 
-```powershell
+```sh
 spacetime dev
 ```
 
 If you need a frontend-only fallback in another terminal:
 
-```powershell
+```sh
 npm run dev
 ```
 
-Additional onboarding notes live in [docs/SETUP.md](/C:/Users/nithi/OneDrive/Documents/Spacetimedb/spacetimedb-hack/docs/SETUP.md).
+Additional onboarding notes live in [docs/SETUP.md](docs/SETUP.md).
 
 ## Local Development Flow
 
@@ -83,7 +84,7 @@ What the baseline proves right now:
 
 Do this only after the local scaffold works:
 
-```powershell
+```sh
 spacetime publish bodega-blitz --server maincloud
 ```
 
@@ -121,7 +122,7 @@ Rules:
 
 Run:
 
-```powershell
+```sh
 npm test
 ```
 
@@ -154,7 +155,7 @@ Each teammate should post in the team channel:
 
 ## Troubleshooting
 
-See [docs/TROUBLESHOOTING.md](/C:/Users/nithi/OneDrive/Documents/Spacetimedb/spacetimedb-hack/docs/TROUBLESHOOTING.md) for the common failure cases:
+See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for the common failure cases:
 
 - `spacetime` command not found
 - wrong host target

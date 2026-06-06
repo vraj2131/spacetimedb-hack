@@ -26,7 +26,7 @@ Runtime requirement: Node 18+ technically, but 18 is EOL. Use Node 20 LTS or 22.
 
 ### Compatibility decisions (read these, they change the scaffold)
 1. One Vite app only. SpacetimeDB's `react-ts` template and Phaser's official template both produce a React+Vite app; they conflict. Base the project on the SpacetimeDB template and `npm install phaser` into it.
-2. Use the current SpacetimeDB React hooks, not a hand-rolled connection layer. Import `DbConnection` and generated row types from `./module_bindings`; import `{ useSpacetimeDB, useTable, where, eq }` from `spacetimedb/react`. Get the connection with `const conn = useSpacetimeDB<DbConnection>()`, read rows from `const { rows } = useTable<DbConnection, RowType>('table_name', where(eq('room_id', roomId)))`, and call reducers through `conn.reducers.reducerName(...)`. Do not add a separate reducer hook import; reducers are exposed on the connection. The original plan's `lib/spacetimedb.ts` is 1.x-style; keep only a thin connection/config file, drive everything else through hooks.
+2. Use the current SpacetimeDB React hooks from the generated template, not a hand-rolled connection layer. Import `{ tables, reducers }` from `./module_bindings` and `{ useSpacetimeDB, useTable, useReducer }` from `spacetimedb/react`. Subscribe with `const [players, isReady] = useTable(tables.players)`; filtered subscriptions use the generated query builder shape, e.g. `tables.players.where(r => r.roomId.eq(roomId))`. Call reducers through reducer hooks, e.g. `const movePlayer = useReducer(reducers.movePlayer)` then `movePlayer({ direction })`. Use `useSpacetimeDB()` only for connection state such as `identity` and `isActive`.
 3. Tailwind v4 has no config file by default. Setup is: `npm install tailwindcss @tailwindcss/vite`, add `tailwindcss()` to the Vite plugins, `@import "tailwindcss";` at the top of the main CSS. Do not scaffold a `tailwind.config.js` unless you need custom theme tokens.
 4. Verify before relying on exact syntax: SpacetimeDB 2.0 scheduled-table API is documented, but the 1s tick still deserves a tiny syntax spike before scoring depends on it; use lazy elapsed-time scoring on `move`/`claim`/`end_round` as the fallback. Use `spacetime publish bodega-blitz --server maincloud` for Maincloud. Also verify Phaser 4 loader API names, since many examples online target Phaser 3.
 
@@ -48,17 +48,20 @@ Standard pattern. One React component mounts Phaser:
 
 Example client hook shape:
 ```ts
-import { DbConnection, Player } from './module_bindings'
-import { useSpacetimeDB, useTable, where, eq } from 'spacetimedb/react'
+import { tables, reducers } from './module_bindings'
+import { useSpacetimeDB, useTable, useReducer } from 'spacetimedb/react'
 
-const conn = useSpacetimeDB<DbConnection>()
-const { rows: players } = useTable<DbConnection, Player>(
-  'players',
-  where(eq('room_id', roomId))
+const { identity, isActive: connected } = useSpacetimeDB()
+const [players, playersReady] = useTable(tables.players)
+const [roomPlayers] = useTable(
+  tables.players.where(r => r.roomId.eq(roomId))
 )
 
-conn.reducers.movePlayer(direction)
-conn.reducers.claimTile(tileId)
+const movePlayer = useReducer(reducers.movePlayer)
+const claimTile = useReducer(reducers.claimTile)
+
+movePlayer({ direction })
+claimTile({ tileId })
 ```
 
 ### Why this ordering
@@ -191,8 +194,8 @@ Screens:
 
 Components: HUD, Scoreboard, EventFeed, SpectatorBar, TauntBubble, CountdownOverlay (plus PhaserGame for the board).
 
-Subscriptions (room-scoped, via `useTable` with filters):
-Use the object return shape from current hooks: `const { rows: tiles } = useTable<DbConnection, Tile>('tiles', where(eq('room_id', roomId)))`.
+Subscriptions (room-scoped, via generated `tables.*` query builders):
+Use the tuple return shape from current hooks: `const [tiles, tilesReady] = useTable(tables.tiles.where(r => r.roomId.eq(roomId)))`.
 ```
 rooms          WHERE code=:code
 players        WHERE room_id=:id
@@ -256,31 +259,32 @@ Phase 1-4 use Phaser colored rectangles + text labels, zero art. Drop the atlas 
 
 ## Commands
 
-Scaffold (Windows / PowerShell):
-```powershell
+Scaffold (macOS / zsh):
+```sh
+curl -sSf https://install.spacetimedb.com | sh
 spacetime login
-spacetime dev --template react-ts bodega-blitz
-cd bodega-blitz\client
+spacetime dev bodega-blitz --template react-ts --server maincloud
+cd bodega-blitz
 npm install -D tailwindcss @tailwindcss/vite
 npm install phaser
 ```
 Tailwind wiring: add `tailwindcss()` to the Vite plugins array, then `@import "tailwindcss";` at the top of `src/index.css`.
 
 Local dev (from project root):
-```powershell
+```sh
 spacetime dev
 spacetime logs
 spacetime sql "SELECT * FROM rooms"
 ```
 
 Publish to Maincloud:
-```powershell
+```sh
 spacetime publish bodega-blitz --server maincloud
 ```
 Client points at `https://maincloud.spacetimedb.com` with database name `bodega-blitz`.
 
 Flavor worker:
-```powershell
+```sh
 node agents/run-flavor.ts
 ```
 

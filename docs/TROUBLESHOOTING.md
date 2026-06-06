@@ -1,13 +1,13 @@
 # Troubleshooting
 
-## `spacetime` is not recognized
+## `spacetime` command not found
 
-Install the SpacetimeDB CLI, then restart the terminal so PowerShell picks up the new path.
+Install the SpacetimeDB CLI, then restart the terminal or open a new shell so the updated path is loaded.
 
-Windows install command:
+macOS install command:
 
-```powershell
-iwr https://windows.spacetimedb.com -useb | iex
+```sh
+curl -sSf https://install.spacetimedb.com | sh
 ```
 
 ## The app connects to the wrong server
