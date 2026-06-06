@@ -149,11 +149,13 @@ export const claimTile = spacetimedb.reducer(
       throw new Error('claim_tile: tile is not adjacent');
     }
 
-    // Pigeon block consumes this claim. SpacetimeDB reducers are atomic, so we
-    // cannot both clear the flag and throw (the throw would roll back the
-    // clear). We therefore consume the block by clearing it and skipping the
-    // claim — the action fizzles for this turn. (No reducer sets pigeonBlocked
-    // yet; this is forward-looking once spectator events land.)
+    // The brief specifies "reject+clear if pigeon-blocked", but SpacetimeDB
+    // reducers are atomic: a throw rolls back every write in the call, including
+    // the clear. So "reject AND clear" is impossible. We honor the gameplay
+    // intent (a pigeon costs you one claim) by consuming the block — clear the
+    // flag and skip the claim, so the action fizzles for this turn. Not yet
+    // reachable in tests: no reducer sets pigeonBlocked until the spectator
+    // pigeon power lands, which should also decide on player-facing feedback.
     if (state.pigeonBlocked) {
       ctx.db.player_state.playerId.update({ ...state, pigeonBlocked: false });
       return;
