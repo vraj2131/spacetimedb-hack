@@ -50,16 +50,16 @@ const GAME_TABLES = [
   'round_tick',
 ];
 
+// Reducers still scaffolded as stubs. start_round + move_player are now
+// implemented (see IMPLEMENTED_REDUCERS below) so they are intentionally absent.
 const STUB_REDUCERS = [
   ['create_room', files.reducersRoom],
   ['join_room', files.reducersRoom],
-  ['start_round', files.reducersRoom],
   ['end_round', files.reducersRoom],
   ['rematch', files.reducersRoom],
   ['reset_demo_room', files.reducersRoom],
   ['tick_round', files.reducersRoom],
   ['register_player', files.reducersPlayer],
-  ['move_player', files.reducersPlayer],
   ['claim_tile', files.reducersPlayer],
   ['contest_tile', files.reducersPlayer],
   ['collect_pickup', files.reducersPlayer],
@@ -92,10 +92,24 @@ const checks = [
     src.includes(`'${name}'`) && src.includes(`not implemented: ${name}`),
   ]),
 
+  // --- server: implemented reducers (Wave 1 scrollable-world) ------------
+  [
+    'start_round is implemented (seeds tiles from the map)',
+    files.reducersRoom.includes("name: 'start_round'") &&
+      !files.reducersRoom.includes('not implemented: start_round') &&
+      files.reducersRoom.includes('ctx.db.tiles.insert'),
+  ],
+  [
+    'move_player is implemented (enforces map bounds)',
+    files.reducersPlayer.includes("name: 'move_player'") &&
+      !files.reducersPlayer.includes('not implemented: move_player') &&
+      files.reducersPlayer.includes('MAP_WIDTH'),
+  ],
+
   // --- server: barrel + map ----------------------------------------------
   ['index.ts default-exports the schema', files.serverIndex.includes('export default spacetimedb')],
   ['index.ts re-exports the dev + game reducers', files.serverIndex.includes('./reducers.dev') && files.serverIndex.includes('./reducers.room')],
-  ['map.ts declares the 12x8 board dimensions', files.map.includes('BOARD_WIDTH = 12') && files.map.includes('BOARD_HEIGHT = 8')],
+  ['map.ts declares the 28x20 map dimensions', files.map.includes('MAP_WIDTH = 28') && files.map.includes('MAP_HEIGHT = 20')],
 
   // --- client: frozen render contract ------------------------------------
   ['renderState.ts exports the RenderState contract', files.renderState.includes('export interface RenderState')],
