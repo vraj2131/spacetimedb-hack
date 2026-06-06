@@ -94,6 +94,8 @@ export type MatchViewModel = {
   controls: MatchControl[];
   isHost: boolean;
   actionStatusLabel: string;
+  spectatorEnergy: number;
+  localPlayerEffects: { speedBoost: boolean; stunned: boolean };
 };
 
 export type ResultsViewModel = {
@@ -139,6 +141,10 @@ export type GameUiActions = {
   onReturnToDev: () => void;
   onMove: (direction: MoveDirection) => void;
   onClaimTileAt: (x: number, y: number) => void;
+  onContestTile: (tileId: number) => void;
+  onCollectPickup: (pickupId: number) => void;
+  onSpectatorEvent: (eventType: string, targetPlayerId?: number, targetTileId?: number) => void;
+  onSpectatorTileClick: (eventType: string, x: number, y: number) => void;
 };
 
 const connected: ConnectionState = {
@@ -235,6 +241,8 @@ export function createMockGameUiState(role: PlayerRole = mockRoom.localRole): Ga
           ],
       isHost: canStartRound,
       actionStatusLabel: '',
+      spectatorEnergy: isSpectator ? 10 : 0,
+      localPlayerEffects: { speedBoost: false, stunned: false },
     },
     resultsView: {
       roomId: sourceRoom.id,
