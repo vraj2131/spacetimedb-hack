@@ -82,6 +82,16 @@ export const movePlayer = spacetimedb.reducer(
       throw new SenderError('move_player: no player_state (round not started)');
     }
 
+    const nowMs = timestampMs(ctx);
+
+    // Stun guard: reject movement while stunned.
+    if (toNumberMs(state.disabledUntilMs) > Number(nowMs)) {
+      throw new SenderError('move_player: stunned');
+    }
+
+    // Speed boost: track whether the player has an active speed buff.
+    const boosted = toNumberMs(state.speedUntilMs) > Number(nowMs);
+
     const targetX = gridCoord(state.x) + step.dx;
     const targetY = gridCoord(state.y) + step.dy;
 
@@ -98,12 +108,71 @@ export const movePlayer = spacetimedb.reducer(
       throw new SenderError('move_player: cannot move onto an alley tile');
     }
 
+    // Update position.
     ctx.db.player_state.playerId.update({
       ...state,
       x: targetX,
       y: targetY,
-      lastMoveAtMs: timestampMs(ctx),
+      lastMoveAtMs: nowMs,
     });
+
+    // --- Post-move side-effects ---
+
+    // Spill stun: if the destination tile has an active spill, stun the player.
+    const destTile = [...ctx.db.tiles.roomId.filter(player.roomId)].find(
+      t => gridCoord(t.x) === targetX && gridCoord(t.y) === targetY
+    );
+    if (destTile && toNumberMs(destTile.spillUntilMs) > Number(nowMs)) {
+      const freshStateSpill = ctx.db.player_state.playerId.find(player.id)!;
+      ctx.db.player_state.playerId.update({
+        ...freshStateSpill,
+        disabledUntilMs: nowMs + STUN_DURATION_MS,
+      });
+    }
+
+    // Auto-collect: if an active pickup exists at the new position, collect it.
+    const pickup = [...ctx.db.pickups.roomId.filter(player.roomId)].find(
+      p => p.active && gridCoord(p.x) === targetX && gridCoord(p.y) === targetY
+    );
+    if (pickup) {
+      const freshState = ctx.db.player_state.playerId.find(player.id)!;
+
+      if (pickup.pickupType === 'cash') {
+        ctx.db.player_state.playerId.update({
+          ...freshState,
+          cash: freshState.cash + pickup.value,
+          pickupCashTotal: freshState.pickupCashTotal + pickup.value,
+        });
+      } else if (pickup.pickupType === 'coffee') {
+        ctx.db.player_state.playerId.update({
+          ...freshState,
+          speedUntilMs: nowMs + COFFEE_BOOST_MS,
+        });
+      } else if (pickup.pickupType === 'shield') {
+        // Shield the destination tile.
+        if (destTile) {
+          // Re-read tile in case it was updated by spill check above (it wasn't, but be safe).
+          const freshTile = ctx.db.tiles.id.find(destTile.id)!;
+          ctx.db.tiles.id.update({ ...freshTile, shieldUntilMs: nowMs + SHIELD_DURATION_MS });
+        }
+      }
+
+      // Deactivate the pickup.
+      ctx.db.pickups.id.update({ ...pickup, active: false });
+
+      // Insert pickup event.
+      ctx.db.events.insert({
+        id: 0n, // auto-increment
+        roomId: player.roomId,
+        eventType: 'pickup',
+        sourcePlayerId: player.id,
+        targetPlayerId: undefined,
+        targetTileId: undefined,
+        message: `${player.name} collected ${pickup.pickupType}`,
+        createdAtMs: nowMs,
+        expiresAtMs: nowMs + PICKUP_EVENT_TTL_MS,
+      });
+    }
   }
 );
 
@@ -111,6 +180,9 @@ export const movePlayer = spacetimedb.reducer(
 function toNumberMs(value: number | bigint): number {
   return typeof value === 'bigint' ? Number(value) : value;
 }
+
+/** Stun duration when stepping on a spill (ms). */
+const STUN_DURATION_MS = 3_000n;
 
 /** Pickup-event lifetime in the feed (ms). */
 const PICKUP_EVENT_TTL_MS = 30_000n;
