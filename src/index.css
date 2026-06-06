@@ -200,6 +200,18 @@ input:disabled {
   margin-top: 6px;
 }
 
+.phaser-canvas {
+  display: flex;
+  justify-content: center;
+}
+
+.phaser-canvas canvas {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #d8d0bf;
+  border-radius: 8px;
+}
+
 @media (max-width: 560px) {
   .panel {
     padding: 20px;
