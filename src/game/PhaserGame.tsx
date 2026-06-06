@@ -27,6 +27,7 @@ export function PhaserGame({
   viewportHeight?: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const gameRef = useRef<Phaser.Game | null>(null);
 
   useEffect(() => {
     const parent = containerRef.current;
@@ -39,23 +40,34 @@ export function PhaserGame({
       height: viewportHeight,
       backgroundColor: '#142033',
       scene: [new BoardScene({ cameraMode, localPlayerId })],
+      scale: {
+        mode: Phaser.Scale.NONE,
+      },
     });
 
-    // Prime the bus before the scene boots so create() replays this snapshot.
-    EventBus.emit('renderState:update', renderState);
+    gameRef.current = game;
 
     const offTileClick = EventBus.on('tile:click', ({ x, y }) => {
       console.info('[PhaserGame] tile:click', { x, y });
     });
 
+    EventBus.emit('renderState:update', renderState);
+
     return () => {
       offTileClick();
+      gameRef.current = null;
       game.destroy(true);
     };
     // Rebuild the game only when board dimensions change (rare). Per-frame
     // RenderState updates flow through EventBus, not a remount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cameraMode, localPlayerId, renderState.width, renderState.height, viewportHeight, viewportWidth]);
+  }, [cameraMode, localPlayerId, renderState.width, renderState.height]);
+
+  useEffect(() => {
+    const game = gameRef.current;
+    if (!game) return;
+    game.scale.resize(viewportWidth, viewportHeight);
+  }, [viewportWidth, viewportHeight]);
 
   useEffect(() => {
     EventBus.emit('renderState:update', renderState);

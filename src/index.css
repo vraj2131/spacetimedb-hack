@@ -214,6 +214,102 @@ input:disabled {
   border-radius: 8px;
 }
 
+.match-screen {
+  box-sizing: border-box;
+}
+
+.game-stage {
+  position: relative;
+  height: calc(100vh - 1.5rem);
+  overflow: hidden;
+  border: 1px solid rgba(250, 204, 21, 0.7);
+  border-radius: 0.75rem;
+  background: #142033;
+}
+
+.game-stage__viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.game-stage__overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.game-stage__overlay > * {
+  pointer-events: auto;
+}
+
+.game-stage .phaser-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.game-stage .phaser-canvas canvas {
+  display: block;
+  max-width: none;
+  border: none;
+  border-radius: 0;
+}
+
+.match-overlay {
+  position: absolute;
+}
+
+.match-overlay--header {
+  top: 0.75rem;
+  left: 0.75rem;
+  right: 0.75rem;
+}
+
+.match-overlay__panel {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+  padding: 0.75rem;
+}
+
+.match-overlay__panel--header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.match-overlay--scoreboard {
+  top: 5.5rem;
+  left: 0.75rem;
+  width: min(18rem, calc(100% - 1.5rem));
+  max-height: calc(100% - 12rem);
+}
+
+.match-overlay--hud {
+  top: 5.5rem;
+  right: 0.75rem;
+  width: min(20rem, calc(100% - 1.5rem));
+  max-height: calc(100% - 12rem);
+}
+
+.match-overlay--controls {
+  bottom: 0.75rem;
+  left: 0.75rem;
+  right: 0.75rem;
+}
+
+.match-overlay__panel--scroll {
+  max-height: inherit;
+  overflow: auto;
+}
+
 @media (max-width: 560px) {
   .panel {
     padding: 20px;

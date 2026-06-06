@@ -110,6 +110,15 @@ export class BoardScene extends Phaser.Scene {
   private skyline: Phaser.GameObjects.Graphics | null = null;
   private frame: Phaser.GameObjects.Graphics | null = null;
   private unsubscribeRenderState: (() => void) | null = null;
+  private pendingRenderState: RenderState | null = null;
+  private applyScheduled = false;
+  private lastRenderState: RenderState | null = null;
+  private minZoom = 0.35;
+  private maxZoom = 2.5;
+  private isPanning = false;
+  private didPan = false;
+  private panPointerId = -1;
+  private panStart = { x: 0, y: 0, scrollX: 0, scrollY: 0 };
 
   constructor({ cameraMode = 'follow', localPlayerId }: BoardSceneConfig = {}) {
     super({ key: BoardScene.KEY });
@@ -119,20 +128,78 @@ export class BoardScene extends Phaser.Scene {
 
   create(): void {
     this.unsubscribeRenderState = EventBus.on('renderState:update', state => {
-      this.applyRenderState(state);
+      this.scheduleApplyRenderState(state);
     });
 
+    const camera = this.cameras.main;
+
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      const origin = getMapOrigin(this.boardHeight);
-      const grid = pixelToGrid(
-        pointer.worldX,
-        pointer.worldY,
-        this.boardWidth,
-        this.boardHeight,
-        origin,
-      );
-      if (grid) {
-        EventBus.emit('tile:click', grid);
+      if (!pointer.leftButtonDown()) return;
+      this.isPanning = true;
+      this.didPan = false;
+      this.panPointerId = pointer.id;
+      this.panStart = {
+        x: pointer.x,
+        y: pointer.y,
+        scrollX: camera.scrollX,
+        scrollY: camera.scrollY,
+      };
+    });
+
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      if (!this.isPanning || pointer.id !== this.panPointerId || !pointer.isDown) return;
+      const dx = pointer.x - this.panStart.x;
+      const dy = pointer.y - this.panStart.y;
+      if (Math.hypot(dx, dy) < 6) return;
+      this.didPan = true;
+      camera.scrollX = this.panStart.scrollX - dx / camera.zoom;
+      camera.scrollY = this.panStart.scrollY - dy / camera.zoom;
+    });
+
+    this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.id !== this.panPointerId) return;
+      if (!this.didPan && this.boardWidth > 0 && this.boardHeight > 0) {
+        const origin = getMapOrigin(this.boardHeight);
+        const grid = pixelToGrid(
+          pointer.worldX,
+          pointer.worldY,
+          this.boardWidth,
+          this.boardHeight,
+          origin,
+        );
+        if (grid) {
+          EventBus.emit('tile:click', grid);
+        }
+      }
+      this.isPanning = false;
+      this.didPan = false;
+      this.panPointerId = -1;
+    });
+
+    this.input.on(
+      'wheel',
+      (
+        pointer: Phaser.Input.Pointer,
+        _gameObjects: unknown,
+        _deltaX: number,
+        deltaY: number,
+      ) => {
+        const prevZoom = camera.zoom;
+        const nextZoom = Phaser.Math.Clamp(prevZoom - deltaY * 0.0015, this.minZoom, this.maxZoom);
+        if (nextZoom === prevZoom) return;
+
+        const worldBeforeZoom = pointer.positionToCamera(camera) as Phaser.Math.Vector2;
+        camera.setZoom(nextZoom);
+        camera.preRender();
+        const worldAfterZoom = pointer.positionToCamera(camera) as Phaser.Math.Vector2;
+        camera.scrollX += worldBeforeZoom.x - worldAfterZoom.x;
+        camera.scrollY += worldBeforeZoom.y - worldAfterZoom.y;
+      },
+    );
+
+    this.scale.on('resize', () => {
+      if (this.lastRenderState) {
+        this.configureCamera(this.lastRenderState);
       }
     });
   }
@@ -140,9 +207,34 @@ export class BoardScene extends Phaser.Scene {
   shutdown(): void {
     this.unsubscribeRenderState?.();
     this.unsubscribeRenderState = null;
+    this.pendingRenderState = null;
+    this.applyScheduled = false;
+  }
+
+  private scheduleApplyRenderState(state: RenderState): void {
+    this.pendingRenderState = state;
+    if (this.applyScheduled) return;
+    this.applyScheduled = true;
+
+    const tryApply = (): void => {
+      const camera = this.cameras?.main;
+      if (!camera) {
+        this.events.once(Phaser.Scenes.Events.UPDATE, tryApply);
+        return;
+      }
+
+      this.applyScheduled = false;
+      const pending = this.pendingRenderState;
+      if (!pending) return;
+      this.pendingRenderState = null;
+      this.applyRenderState(pending);
+    };
+
+    tryApply();
   }
 
   private applyRenderState(state: RenderState): void {
+    this.lastRenderState = state;
     const dimensionsChanged =
       state.width !== this.boardWidth || state.height !== this.boardHeight;
 
@@ -165,7 +257,9 @@ export class BoardScene extends Phaser.Scene {
 
     const origin = getMapOrigin(state.height);
     const bounds = getMapWorldBounds(state.width, state.height);
-    this.cameras.main.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
+    const camera = this.cameras?.main;
+    if (!camera) return;
+    camera.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
 
     this.skyline = this.add.graphics();
     this.skyline.fillStyle(0x20334f, 0.72);
@@ -397,19 +491,28 @@ export class BoardScene extends Phaser.Scene {
     }
   }
 
-  private configureCamera(state: RenderState): void {
-    const camera = this.cameras.main;
+  private getFitZoom(camera: Phaser.Cameras.Scene2D.Camera, state: RenderState): number {
     const bounds = getMapWorldBounds(state.width, state.height);
+    return Math.min(camera.width / bounds.width, camera.height / bounds.height) * 0.94;
+  }
+
+  private configureCamera(state: RenderState): void {
+    const camera = this.cameras?.main;
+    if (!camera) return;
+
+    const bounds = getMapWorldBounds(state.width, state.height);
+    const fitZoom = this.getFitZoom(camera, state);
+    this.minZoom = fitZoom;
+    this.maxZoom = Math.max(fitZoom * 2.4, 1.25);
 
     if (this.cameraMode === 'overview') {
       camera.stopFollow();
-      const zoom = Math.min(camera.width / bounds.width, camera.height / bounds.height) * 0.92;
-      camera.setZoom(zoom);
+      camera.setZoom(fitZoom);
       camera.centerOn(bounds.centerX, bounds.centerY);
       return;
     }
 
-    camera.setZoom(1);
+    camera.setZoom(Math.max(fitZoom, 0.75));
     const followId = this.localPlayerId ?? state.tokens[0]?.playerId;
     const followTarget = followId === undefined ? undefined : this.tokenSprites.get(followId)?.body;
     if (followTarget) {
