@@ -2,6 +2,8 @@
 
 > Companion to the team handbook and the Phase-0 Closeout plan. This says **who does what, in what order, and how it merges** so five people work in parallel without conflicting on the shared skeleton.
 
+> **Status (Wave 1 backend complete):** Wave 0 + the gate are done. Dev A's backend lane has landed on `main` — the room/gameplay reducers (`register_player`, `create_room`, `join_room`, `start_round`, `move_player`, `claim_tile`, `end_round`, `rematch`) are implemented, integration-tested, and published to maincloud; `tables.ts` is blessed. The team is in **Wave 2** (parallel lanes). Client lanes start from **`docs/BACKEND_HANDOFF.md`**.
+
 ## The core idea (read first)
 Phase 0 builds the **shared contract files** (`tables.ts`, `index.ts` barrel, `App.tsx` router, `renderState.ts`, Tailwind config). Those are the conflict magnets, so they get **one writer (Dev A)** who lands them fast. The other four do **not** edit those files during Phase 0 — they work in **scratch branches** against *agreed interfaces*, then graft their work in once the skeleton is on `main`.
 
@@ -64,7 +66,7 @@ This is the one synchronous moment. In order:
 2. **Backend owner (Dev A) blesses `tables.ts`** — the 10 game tables' id/timestamp/enum representation and indexes. `round_tick` is explicitly *excluded* (pending C's scheduled spike).
 3. **Everyone pulls `main`, runs `npm run spacetime:generate`, then `npm run dev`**, and confirms on their own machine: two-tab local round-trip syncs, router renders, Phaser placeholder grid draws, no errors. (Fresh clones must `spacetime:generate` first — bindings are untracked now.)
 4. B, C, D, E **rebase their scratch branches onto the new `main`.** B's game folder and D's assets graft in with no conflict; C's spike findings get folded into A's reducers; E's screens drop into the real stubs.
-5. Lock `.env.local` to local (`ws://127.0.0.1:3000`) for everyone's dev loop. Maincloud stays a separate pre-demo task (still unproven, 403).
+5. Lock `.env.local` to local (`ws://127.0.0.1:3000`) for everyone's dev loop. Maincloud is a separate pre-demo task — **now proven**: `bodega-blitz` published from `main` and smoke-tested (cold-wake still to be checked before the demo).
 
 **Do not start Wave 2 until step 3 passes for all five.** This is the §4 precondition: lanes are only disjoint once the files exist on `main`.
 

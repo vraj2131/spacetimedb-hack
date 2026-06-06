@@ -4,12 +4,13 @@ Live multiplayer NYC block-control game built on SpacetimeDB. Players will fight
 
 ## Current Phase Status
 
-This repository is in **Phase 0: scaffold standardization**.
+Phase 0 (scaffold) is complete and **Wave 1 backend has landed**: the room/gameplay
+reducer chain is implemented, integration-tested, and merged; the schema is blessed;
+and `bodega-blitz` is published to maincloud. The team is now in **Wave 2** — wiring
+the client (screens, HUD, live Phaser `RenderState`) onto those reducers.
 
-- We are validating installs, env setup, connection defaults, and team workflow.
-- The current UI is a temporary round-trip baseline, not the real game.
-- Phaser is installed so the team shares the final rendering stack early.
-- No one should start gameplay work until the scaffold checklist passes for the whole team.
+- The temporary `sync_state` round-trip baseline is still present until the client cuts over to live game state.
+- **Start here for backend integration: [docs/BACKEND_HANDOFF.md](docs/BACKEND_HANDOFF.md).**
 
 This repo uses a **local-first dev path**. Maincloud is for smoke tests and deployment, not daily iteration.
 
@@ -82,8 +83,8 @@ What the baseline proves right now:
 - the reducer can mutate shared state
 - subscriptions update across tabs
 - the Phaser board canvas mounts live beside the round-trip proof
-- the full game schema, reducer stubs (throwing `not implemented`), screen
-  router, and Tailwind v4 are scaffolded for the gameplay slices
+- the full game schema, the implemented room/gameplay reducers, the screen
+  router, and Tailwind v4 back the gameplay slices
 
 ## Maincloud Smoke Test Flow
 
@@ -140,7 +141,7 @@ Then confirm all of these manually:
 - the browser app loads
 - the connection status shows `Connected`
 - the shared value syncs across two tabs
-- the Phaser board canvas renders the 12×8 grid beside the sync proof
+- the Phaser board canvas renders the isometric 28×20 board beside the sync proof
 - there are no missing env errors
 
 Each teammate should post in the team channel:
@@ -155,8 +156,8 @@ Each teammate should post in the team channel:
 - `spacetimedb/` holds the SpacetimeDB module
 - `src/` holds the current Vite React client
 - `src/module_bindings/` is generated and should not be edited by hand
-- `src/game/PhaserGame.tsx` mounts the live board canvas; full BoardScene + EventBus land in Slice 2 (Dev B)
-- keep the `sync_state` proof until the first real gameplay slice replaces it
+- `src/game/` renders the isometric 28×20 board (BoardScene + EventBus) from `RenderState`; swapping the mock for live data is in progress (Dev E adapter → Dev B)
+- keep the `sync_state` proof until the client cuts over to live game state
 
 ## Troubleshooting
 
@@ -168,13 +169,11 @@ See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for the common failure ca
 - browser never connects
 - teammate environment drift
 
-## Next Phase Boundary
+## Next Up (Wave 2)
 
-Phase 0 ends only when the whole team can run the same scaffold successfully.
+Backend reducer bodies are done (see [docs/BACKEND_HANDOFF.md](docs/BACKEND_HANDOFF.md)). The client lanes now:
 
-Only after that do we start the first gameplay slice:
-
-1. implement room reducer bodies (`create_room`, `join_room`, `start_round`, …)
-2. wire Join + Lobby screens to those reducers
-3. project live game state into `RenderState` for Phaser
-4. `move_player` across two tabs on the synced grid
+1. ~~implement room reducer bodies~~ — **done** (`register_player`, `create_room`, `join_room`, `start_round`, `move_player`, `claim_tile`, `end_round`, `rematch`)
+2. wire Join + Lobby + Match + Results screens to those reducers
+3. project live game state into `RenderState` for Phaser (replace the mock)
+4. `move_player` / `claim_tile` across two tabs on the synced 28×20 board

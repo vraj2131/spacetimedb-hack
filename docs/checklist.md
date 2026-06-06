@@ -2,7 +2,7 @@
 
 Living progress tracker for the project. Check items off as they land (`- [x]`). Leave pending items unchecked (`- [ ]`).
 
-Last updated: June 6, 2026 (Wave 0 complete — spine + mocked UI [Dev E] + assets/flavor stubs [Dev D] merged; spikes verified. Entering Wave 1 — room sync.)
+Last updated: June 6, 2026 (Wave 1 backend complete — room/gameplay reducers `register_player`/`create_room`/`join_room`/`start_round`/`move_player`/`claim_tile`/`end_round`/`rematch` implemented, integration-tested, and merged; `tables.ts` blessed; maincloud published. Entering Wave 2 — client live-wiring. See `docs/BACKEND_HANDOFF.md`.)
 
 ---
 
@@ -61,7 +61,7 @@ Goal: every teammate can clone, connect locally, and prove shared state sync bef
 
 - [ ] All teammates run `spacetime dev` successfully
 - [ ] Two-tab shared value sync confirmed by whole team
-- [ ] Maincloud smoke test (`spacetime publish bodega-blitz --server maincloud`)
+- [x] Maincloud smoke test (`spacetime publish bodega-blitz --server maincloud`) — _published from `main`; schema responsive_
 
 ---
 
@@ -81,10 +81,10 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 
 - [ ] Game schema replaces `sync_state` (`rooms`, `players`, `player_state`, `tiles`, …) — _tables scaffolded alongside `sync_state`; `sync_state` still drives the dev round-trip_
 - [x] `register_player`, `create_room`, `join_room`, `start_round` reducers — _implemented + integration-tested on `backend-mvp-reducers`_
-- [ ] `spacetimedb/src/map.ts` — 12×8 layout + spawn corners — _stub: dimensions + spawn corners present; full layout pending_
+- [x] `spacetimedb/src/map.ts` — 28×20 layout + spawn points — _v1 NYC tile types (street/bodega/alley); pickup spawns still empty_
 - [ ] Join screen (nickname, role, optional room code)
 - [ ] Lobby screen (code, roster, host start button)
-- [ ] Phaser draws 12×8 grid as colored rectangles
+- [ ] Phaser draws 28×20 grid as colored rectangles
 - [ ] `move_player` works across two tabs
 
 ### Slice 3 — Claim + results
@@ -152,7 +152,7 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 - [ ] Basic SFX
 - [ ] Winner state
 - [ ] Mobile touch controls
-- [ ] `rematch` flow
+- [ ] `rematch` flow — _`rematch` reducer landed; results-screen UI flow pending_
 
 ---
 
