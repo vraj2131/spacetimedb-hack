@@ -7,7 +7,9 @@ import {
   MAX_SPAWN_SEATS,
   tileTypeAt,
   incomeForTileType,
+  type TileType,
 } from './map';
+import { ownershipBonusForTileType, rankResults } from './scoring';
 
 /**
  * Room lifecycle reducers.
@@ -20,17 +22,90 @@ import {
 /** Round length in milliseconds (90s per the brief). */
 const ROUND_DURATION_MS = 90_000n;
 
+/** Characters used for room join codes (uppercase alphanumeric). */
+const CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+const CODE_LENGTH = 6;
+
 // create_room() -> room in lobby; generate short code; set host identity.
-export const createRoom = spacetimedb.reducer({ name: 'create_room' }, _ctx => {
-  throw new Error('not implemented: create_room');
+export const createRoom = spacetimedb.reducer({ name: 'create_room' }, ctx => {
+  const caller = [...ctx.db.players.identity.filter(ctx.sender)][0];
+  if (!caller) {
+    throw new Error('create_room: caller is not a registered player');
+  }
+  if (caller.roomId !== 0) {
+    throw new Error('create_room: caller is already in a room');
+  }
+
+  const nowMs = ctx.timestamp.toMillis();
+
+  // Generate a 6-char code unique across existing rooms (retry on collision).
+  let code = '';
+  for (let attempt = 0; ; attempt++) {
+    if (attempt >= 20) {
+      throw new Error('create_room: could not generate a unique room code');
+    }
+    code = '';
+    for (let i = 0; i < CODE_LENGTH; i++) {
+      code += CODE_ALPHABET[ctx.random.integerInRange(0, CODE_ALPHABET.length - 1)];
+    }
+    if (!ctx.db.rooms.code.find(code)) {
+      break;
+    }
+  }
+
+  const room = ctx.db.rooms.insert({
+    id: 0, // auto-increment
+    code,
+    state: 'lobby',
+    hostIdentity: ctx.sender,
+    roundNumber: 1,
+    seed: ctx.random.bigintInRange(0n, 0xffff_ffff_ffff_ffffn),
+    startsAtMs: 0n,
+    endsAtMs: 0n,
+    createdAtMs: nowMs,
+  });
+
+  ctx.db.players.id.update({ ...caller, roomId: room.id });
 });
 
 // join_room(room_code) -> attach to room; reject if missing/full.
 export const joinRoom = spacetimedb.reducer(
   { name: 'join_room' },
   { roomCode: t.string() },
-  _ctx => {
-    throw new Error('not implemented: join_room');
+  (ctx, { roomCode }) => {
+    const code = roomCode.trim().toUpperCase();
+    const room = ctx.db.rooms.code.find(code);
+    if (!room) {
+      throw new Error('join_room: room not found');
+    }
+
+    const caller = [...ctx.db.players.identity.filter(ctx.sender)][0];
+    if (!caller) {
+      throw new Error('join_room: caller is not a registered player');
+    }
+    if (caller.roomId !== 0) {
+      throw new Error('join_room: caller is already in a room');
+    }
+
+    // Players can only join a lobby/results room with an open seat; spectators
+    // may join at any time (including a live round) to watch.
+    if (caller.role === 'player') {
+      if (room.state === 'live') {
+        throw new Error('join_room: round is in progress');
+      }
+      const seatedPlayers = [...ctx.db.players.roomId.filter(room.id)].filter(
+        p => p.role === 'player'
+      ).length;
+      if (seatedPlayers >= MAX_SPAWN_SEATS) {
+        throw new Error('join_room: room is full');
+      }
+    }
+
+    ctx.db.players.id.update({
+      ...caller,
+      roomId: room.id,
+      joinedAtMs: ctx.timestamp.toMillis(),
+    });
   }
 );
 
@@ -121,8 +196,61 @@ export const startRound = spacetimedb.reducer(
 export const endRound = spacetimedb.reducer(
   { name: 'end_round' },
   { roomId: t.u32() },
-  _ctx => {
-    throw new Error('not implemented: end_round');
+  (ctx, { roomId }) => {
+    const room = ctx.db.rooms.id.find(roomId);
+    if (!room) {
+      throw new Error('end_round: room not found');
+    }
+    if (room.hostIdentity.toHexString() !== ctx.sender.toHexString()) {
+      throw new Error('end_round: only the host can end the round');
+    }
+    if (room.state !== 'live') {
+      throw new Error('end_round: room is not live');
+    }
+
+    const roomTiles = [...ctx.db.tiles.roomId.filter(roomId)];
+    const players = [...ctx.db.players.roomId.filter(roomId)].filter(
+      p => p.role === 'player'
+    );
+
+    // Lazy scoring: tally owned tiles + collected cash at the final whistle.
+    const lines = [];
+    for (const player of players) {
+      const state = ctx.db.player_state.playerId.find(player.id);
+      if (!state) {
+        continue;
+      }
+      const owned = roomTiles.filter(tile => tile.ownerPlayerId === player.id);
+      const tileScore = owned.reduce((sum, tile) => sum + tile.incomeValue, 0);
+      const ownershipBonus = owned.reduce(
+        (sum, tile) => sum + ownershipBonusForTileType(tile.tileType as TileType),
+        0
+      );
+      const cashScore = state.pickupCashTotal;
+      lines.push({
+        playerId: player.id,
+        tileScore,
+        cashScore,
+        ownershipBonus,
+        totalScore: tileScore + cashScore + ownershipBonus,
+      });
+    }
+
+    for (const line of rankResults(lines)) {
+      ctx.db.round_results.insert({
+        id: 0n, // auto-increment
+        roomId,
+        roundNumber: room.roundNumber,
+        playerId: line.playerId,
+        tileScore: line.tileScore,
+        cashScore: line.cashScore,
+        ownershipBonus: line.ownershipBonus,
+        totalScore: line.totalScore,
+        rank: line.rank,
+      });
+    }
+
+    ctx.db.rooms.id.update({ ...room, state: 'results' });
   }
 );
 
@@ -130,8 +258,32 @@ export const endRound = spacetimedb.reducer(
 export const rematch = spacetimedb.reducer(
   { name: 'rematch' },
   { roomId: t.u32() },
-  _ctx => {
-    throw new Error('not implemented: rematch');
+  (ctx, { roomId }) => {
+    const room = ctx.db.rooms.id.find(roomId);
+    if (!room) {
+      throw new Error('rematch: room not found');
+    }
+    if (room.hostIdentity.toHexString() !== ctx.sender.toHexString()) {
+      throw new Error('rematch: only the host can rematch');
+    }
+    if (room.state !== 'results') {
+      throw new Error('rematch: room is not in results');
+    }
+
+    // Clear the finished round's per-room rows; keep the room + its players.
+    ctx.db.tiles.roomId.delete(roomId);
+    ctx.db.player_state.roomId.delete(roomId);
+    ctx.db.events.roomId.delete(roomId);
+    ctx.db.round_results.roomId.delete(roomId);
+    ctx.db.pickups.roomId.delete(roomId);
+
+    ctx.db.rooms.id.update({
+      ...room,
+      state: 'lobby',
+      roundNumber: room.roundNumber + 1,
+      startsAtMs: 0n,
+      endsAtMs: 0n,
+    });
   }
 );
 

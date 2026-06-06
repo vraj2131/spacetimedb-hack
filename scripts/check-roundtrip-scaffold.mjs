@@ -50,17 +50,12 @@ const GAME_TABLES = [
   'round_tick',
 ];
 
-// Reducers still scaffolded as stubs. start_round + move_player are now
-// implemented (see IMPLEMENTED_REDUCERS below) so they are intentionally absent.
+// Reducers still scaffolded as stubs. start_round + move_player + the PR-A1
+// room spine (register_player, create_room, join_room) are now implemented (see
+// the implemented checks below) so they are intentionally absent.
 const STUB_REDUCERS = [
-  ['create_room', files.reducersRoom],
-  ['join_room', files.reducersRoom],
-  ['end_round', files.reducersRoom],
-  ['rematch', files.reducersRoom],
   ['reset_demo_room', files.reducersRoom],
   ['tick_round', files.reducersRoom],
-  ['register_player', files.reducersPlayer],
-  ['claim_tile', files.reducersPlayer],
   ['contest_tile', files.reducersPlayer],
   ['collect_pickup', files.reducersPlayer],
   ['trigger_spectator_event', files.reducersSpectator],
@@ -104,6 +99,42 @@ const checks = [
     files.reducersPlayer.includes("name: 'move_player'") &&
       !files.reducersPlayer.includes('not implemented: move_player') &&
       files.reducersPlayer.includes('MAP_WIDTH'),
+  ],
+  [
+    'register_player is implemented (inserts a player row)',
+    files.reducersPlayer.includes("name: 'register_player'") &&
+      !files.reducersPlayer.includes('not implemented: register_player') &&
+      files.reducersPlayer.includes('ctx.db.players.insert'),
+  ],
+  [
+    'create_room is implemented (inserts a room with a code)',
+    files.reducersRoom.includes("name: 'create_room'") &&
+      !files.reducersRoom.includes('not implemented: create_room') &&
+      files.reducersRoom.includes('ctx.db.rooms.insert'),
+  ],
+  [
+    'join_room is implemented (looks up the room by code)',
+    files.reducersRoom.includes("name: 'join_room'") &&
+      !files.reducersRoom.includes('not implemented: join_room') &&
+      files.reducersRoom.includes('ctx.db.rooms.code.find'),
+  ],
+  [
+    'claim_tile is implemented (sets tile ownership)',
+    files.reducersPlayer.includes("name: 'claim_tile'") &&
+      !files.reducersPlayer.includes('not implemented: claim_tile') &&
+      files.reducersPlayer.includes('ctx.db.tiles.id.update'),
+  ],
+  [
+    'end_round is implemented (writes ranked round_results)',
+    files.reducersRoom.includes("name: 'end_round'") &&
+      !files.reducersRoom.includes('not implemented: end_round') &&
+      files.reducersRoom.includes('ctx.db.round_results.insert'),
+  ],
+  [
+    'rematch is implemented (clears the board back to lobby)',
+    files.reducersRoom.includes("name: 'rematch'") &&
+      !files.reducersRoom.includes('not implemented: rematch') &&
+      files.reducersRoom.includes('ctx.db.tiles.roomId.delete'),
   ],
 
   // --- server: barrel + map ----------------------------------------------
