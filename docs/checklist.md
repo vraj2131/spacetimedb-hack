@@ -130,9 +130,9 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 
 ### Slice 8 — Phaser sprites
 
-- [x] Texture atlas in `public/assets/` — _Dev D shipped `game.png` + `game.json` (17 frames); `BoardScene` does not load it yet_
-- [ ] Replace rectangles with tile / token / pickup sprites
-- [ ] Effect overlays (spill, shield, speed)
+- [x] Texture atlas in `public/assets/` — _Dev D shipped `game.png` + `game.json` (17 frames); `BoardScene` loads it in preload_
+- [x] Replace primitives with tile / token / pickup sprites — _Kenney atlas with circle/polygon fallbacks when load fails_
+- [x] Effect overlays (spill, shield, speed) — _fx_* atlas frames on tile overlay layer_
 - [ ] Idle / walk animations (if time)
 
 ### Slice 9 — LLM flavor

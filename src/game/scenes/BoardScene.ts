@@ -31,8 +31,8 @@ type TileCell = {
 
 type TokenSprite = {
   readonly shadow: Phaser.GameObjects.Ellipse;
-  readonly body: Phaser.GameObjects.Arc;
-  readonly outline: Phaser.GameObjects.Arc;
+  readonly body: Phaser.GameObjects.Arc | Phaser.GameObjects.Image;
+  readonly outline?: Phaser.GameObjects.Arc;
 };
 
 type PickupSprite = Phaser.GameObjects.Polygon | Phaser.GameObjects.Image;
@@ -76,8 +76,15 @@ const TOKEN_BODY_OFFSET_Y = -24;
 const PICKUP_OFFSET_Y = -4;
 const ATLAS_KEY = 'game';
 const TILE_SPRITE_SCALE = TILE_WIDTH / 128;
+const TOKEN_SPRITE_SCALE = TILE_WIDTH / 128;
 const PICKUP_SPRITE_SCALE = 0.22;
 const FX_SPRITE_SCALE = TILE_WIDTH / 128;
+const TOKEN_COLOR_TO_FRAME: Record<string, string> = {
+  '#0f766e': 'token_green',
+  '#dc2626': 'token_red',
+  '#ca8a04': 'token_yellow',
+  '#2563eb': 'token_blue',
+};
 /** Kenney frames anchor at the tile footprint bottom; gridToPixel returns diamond center. */
 const TILE_SPRITE_ORIGIN_X = 0.5;
 const TILE_SPRITE_ORIGIN_Y = 1;
@@ -107,6 +114,10 @@ function tileFrameKey(type: RenderTileType): string {
 
 function pickupFrameKey(type: RenderPickup['type']): string {
   return `pickup_${type}`;
+}
+
+function tokenFrameKey(color: string): string {
+  return TOKEN_COLOR_TO_FRAME[color.toLowerCase()] ?? 'token_red';
 }
 
 function fxFrameKey(tile: RenderTile): string | null {
@@ -366,7 +377,7 @@ export class BoardScene extends Phaser.Scene {
     this.tokenSprites.forEach(sprite => {
       sprite.shadow.destroy();
       sprite.body.destroy();
-      sprite.outline.destroy();
+      sprite.outline?.destroy();
     });
     this.tokenSprites.clear();
     this.pickupSprites.forEach(sprite => sprite.destroy());
@@ -558,34 +569,56 @@ export class BoardScene extends Phaser.Scene {
       const { px, py } = gridToPixel(token.x, token.y, origin);
       let sprite = this.tokenSprites.get(token.playerId);
 
+      const tokenY = py + TILE_SPRITE_FOOT_OFFSET_Y + TOKEN_BODY_OFFSET_Y;
+
       if (!sprite) {
-        sprite = {
-          shadow: this.add.ellipse(px, py, 30, 12, 0x000000, 0.38),
-          outline: this.add.circle(px, py + TOKEN_BODY_OFFSET_Y, 17, 0xffffff),
-          body: this.add.circle(px, py + TOKEN_BODY_OFFSET_Y, 13, parseColor(token.color)),
-        };
+        if (this.atlasReady) {
+          sprite = {
+            shadow: this.add.ellipse(px, py, 30, 12, 0x000000, 0.38),
+            body: this.add
+              .image(px, tokenY, ATLAS_KEY, tokenFrameKey(token.color))
+              .setOrigin(TILE_SPRITE_ORIGIN_X, TILE_SPRITE_ORIGIN_Y)
+              .setScale(TOKEN_SPRITE_SCALE),
+          };
+        } else {
+          sprite = {
+            shadow: this.add.ellipse(px, py, 30, 12, 0x000000, 0.38),
+            outline: this.add.circle(px, tokenY, 17, 0xffffff),
+            body: this.add.circle(px, tokenY, 13, parseColor(token.color)),
+          };
+        }
         this.tokenSprites.set(token.playerId, sprite);
       } else {
         sprite.shadow.setPosition(px, py);
-        sprite.outline.setPosition(px, py + TOKEN_BODY_OFFSET_Y);
-        sprite.body.setPosition(px, py + TOKEN_BODY_OFFSET_Y);
-        sprite.body.setFillStyle(parseColor(token.color));
+        if (isImage(sprite.body)) {
+          sprite.body.setPosition(px, tokenY);
+          sprite.body.setTexture(ATLAS_KEY, tokenFrameKey(token.color));
+        } else {
+          sprite.outline?.setPosition(px, tokenY);
+          sprite.body.setPosition(px, tokenY);
+          sprite.body.setFillStyle(parseColor(token.color));
+        }
       }
 
       const depth = depthForGrid(token.x, token.y, 5_000);
       sprite.shadow.setDepth(depth - 2);
-      sprite.outline.setDepth(depth - 1);
+      sprite.outline?.setDepth(depth - 1);
       sprite.body.setDepth(depth);
       sprite.body.setAlpha(token.disabled ? 0.35 : 1);
-      sprite.outline.setAlpha(token.disabled ? 0.4 : 1);
-      sprite.body.setScale(token.boosted ? 1.15 : 1);
-      sprite.outline.setScale(token.boosted ? 1.15 : 1);
+      sprite.outline?.setAlpha(token.disabled ? 0.4 : 1);
+      const boostedScale = token.boosted ? 1.15 : 1;
+      if (isImage(sprite.body)) {
+        sprite.body.setScale(TOKEN_SPRITE_SCALE * boostedScale);
+      } else {
+        sprite.body.setScale(boostedScale);
+        sprite.outline?.setScale(boostedScale);
+      }
     }
 
     for (const [playerId, sprite] of this.tokenSprites) {
       if (seen.has(playerId)) continue;
       sprite.shadow.destroy();
-      sprite.outline.destroy();
+      sprite.outline?.destroy();
       sprite.body.destroy();
       this.tokenSprites.delete(playerId);
     }

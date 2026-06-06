@@ -45,7 +45,7 @@ test('README reflects merged M1 live wiring instead of pending client work', () 
   );
 });
 
-test('checklist marks M1 live UI items complete and leaves atlas sprites open', () => {
+test('checklist marks M1 live UI items complete and atlas sprites landed', () => {
   const checklist = read('docs/checklist.md');
 
   for (const landed of [
@@ -58,11 +58,12 @@ test('checklist marks M1 live UI items complete and leaves atlas sprites open', 
     '- [x] Results screen',
     '- [x] Two clients agree on winner',
     '- [x] `rematch` flow',
+    '- [x] Replace primitives with tile / token / pickup sprites',
+    '- [x] Effect overlays (spill, shield, speed)',
   ]) {
     assert.match(checklist, new RegExp(landed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
 
-  assert.match(checklist, /- \[ \] Replace rectangles with tile \/ token \/ pickup sprites/);
   assert.match(checklist, /M1_SMOKE_TEST\.md/);
 });
 
@@ -83,7 +84,7 @@ test('M1 smoke doc records verified pass criteria', () => {
   }
 });
 
-test('ROADMAP reflects L2A-L2C landed and primitive board status', () => {
+test('ROADMAP reflects L2A-L2C landed and notes remaining M2B controls', () => {
   const roadmap = read('docs/ROADMAP.md');
 
   assert.match(roadmap, /What's landed \(M1 live wiring — L2A–L2C merged\)/);
@@ -99,6 +100,7 @@ test('ROADMAP reflects L2A-L2C landed and primitive board status', () => {
     /No live `RenderState` adapter/,
     'ROADMAP should not claim the live adapter is missing',
   );
-  assert.match(roadmap, /board draws primitives/);
+  assert.match(roadmap, /M2B client controls/);
+  assert.match(roadmap, /L3A landed/);
   assert.match(roadmap, /M1_SMOKE_TEST\.md/);
 });
