@@ -1,0 +1,73 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import test from 'node:test';
+
+const repoRoot = process.cwd();
+
+function read(path) {
+  return readFileSync(join(repoRoot, path), 'utf8');
+}
+
+test('Dev E adapter exposes backend handoff view models and actions', () => {
+  const uiState = read('src/screens/uiState.ts');
+
+  for (const exportName of [
+    'ConnectionState',
+    'JoinViewModel',
+    'LobbyViewModel',
+    'MatchViewModel',
+    'ResultsViewModel',
+    'GameUiState',
+    'GameUiActions',
+    'createMockGameUiState',
+  ]) {
+    assert.match(uiState, new RegExp(`export (type|function) ${exportName}\\b`));
+  }
+
+  for (const expectedField of [
+    'localIdentity',
+    'localRole',
+    'roomState',
+    'timerEndsAt',
+    'spectatorCount',
+    'liveStandings',
+    'recentTaunt',
+    'canStartRound',
+    'canRematch',
+  ]) {
+    assert.match(uiState, new RegExp(`\\b${expectedField}\\b`));
+  }
+});
+
+test('App preserves the dev scaffold while exposing the Dev E screen flow', () => {
+  const app = read('src/App.tsx');
+
+  assert.match(app, /useState<Screen>\('dev'\)/);
+  assert.match(app, /navigateToJoin/);
+  assert.match(app, /<DevSync/);
+  assert.match(app, /Start Bodega Blitz/);
+});
+
+test('Dev E screens consume view models and action callbacks instead of mockData directly', () => {
+  for (const screen of ['Join', 'Lobby', 'Match', 'Results']) {
+    const contents = read(`src/screens/${screen}.tsx`);
+    assert.doesNotMatch(contents, /from '\.\/mockData'/, `${screen} should not import mockData`);
+    assert.match(contents, /viewModel/, `${screen} should receive a viewModel prop`);
+  }
+});
+
+test('Dev E components have empty-state labels for backend-not-ready data', () => {
+  const componentChecks = {
+    'src/components/Scoreboard.tsx': ['No standings yet', 'No result rows yet'],
+    'src/components/PlayerRoster.tsx': ['Waiting for players'],
+    'src/components/Hud.tsx': ['No events yet', 'Taunts warming up'],
+  };
+
+  for (const [path, labels] of Object.entries(componentChecks)) {
+    const contents = read(path);
+    for (const label of labels) {
+      assert.match(contents, new RegExp(label));
+    }
+  }
+});
