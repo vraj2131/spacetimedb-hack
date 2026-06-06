@@ -19,10 +19,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node 20
+      # Node 22 (not 20): the unit tests import .ts source directly and run via
+      # `node --experimental-strip-types`, which needs Node >=22.6. The brief
+      # sanctions Node 20 LTS or 22; 22 is required for the test gate.
+      - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: |
             package-lock.json
@@ -50,5 +53,5 @@ jobs:
       - name: Build (tsc -b && vite build)
         run: npm run build
 
-      - name: Scaffold round-trip check
+      - name: Scaffold + unit tests
         run: npm test

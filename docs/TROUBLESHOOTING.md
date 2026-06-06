@@ -27,15 +27,22 @@ VITE_SPACETIMEDB_HOST=https://maincloud.spacetimedb.com
 
 ## `npm test` fails
 
-The scaffold verification script checks for:
+The scaffold verification script (`npm test`) runs:
 
-- the `sync_state` table and reducer
-- the local-first connection default
-- the shared `.env.example`
-- Phaser as an installed dependency
-- README scaffold guidance
+- `scripts/check-roundtrip-scaffold.mjs` — 60 structural checks for the Wave 0 spine (schema split, stub reducers, RenderState firewall, router, Tailwind)
+- `tests/*.test.mjs` — unit checks for map/renderState, generated bindings, Phaser firewall, onboarding docs
 
-If one of those changed intentionally, update the script in `scripts/check-roundtrip-scaffold.mjs` as part of the same commit.
+If you changed the scaffold intentionally, update those scripts as part of the same commit.
+
+## `src/module_bindings` is missing after clone
+
+Bindings are gitignored. Regenerate before build or dev:
+
+```sh
+npm run spacetime:generate
+```
+
+CI runs this automatically; fresh local clones must run it once after pull.
 
 ## The browser loads but never connects
 
