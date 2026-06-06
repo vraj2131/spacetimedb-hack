@@ -1,6 +1,5 @@
 import { schema } from 'spacetimedb/server';
 import {
-  syncState,
   rooms,
   players,
   playerState,
@@ -22,7 +21,6 @@ import { roundTick, registerTickReducer } from './reducers.tick';
  * generated client bindings.
  */
 const spacetimedb = schema({
-  sync_state: syncState,
   rooms,
   players,
   player_state: playerState,

@@ -52,8 +52,8 @@ export function MatchScreen({
   const actionHint = viewModel.isSpectator
     ? 'Spectator watch mode'
     : tileActionMode === 'contest'
-      ? 'Contest mode — click an adjacent enemy tile'
-      : 'Claim mode — click an adjacent open tile';
+      ? 'Contest mode — click an enemy tile next to your token on the map'
+      : 'Claim mode — click an empty tile next to your token on the map';
 
   const keyboardMoveEnabled =
     canPlay && !viewModel.localPlayerEffects.stunned && viewModel.roomState === 'live';

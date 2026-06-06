@@ -29,6 +29,10 @@ export function Scoreboard({ title, variant = 'default', ...props }: ScoreboardP
     ? 'match-panel__label'
     : 'text-xs font-bold uppercase tracking-wide text-teal-700';
 
+  const legendClass = isCompact
+    ? 'text-[0.65rem] font-semibold leading-snug text-slate-400'
+    : 'mt-1 text-[11px] font-semibold leading-snug text-slate-500';
+
   const listClass = isCompact ? 'match-panel__scroll mt-1.5 grid gap-1' : 'mt-3 grid gap-2';
 
   const emptyClass = isCompact
@@ -51,13 +55,18 @@ export function Scoreboard({ title, variant = 'default', ...props }: ScoreboardP
     ? 'text-xs font-black text-yellow-200'
     : 'font-black text-slate-900';
 
-  const defaultLiveTitle = isCompact ? 'Live standings' : 'Live standings (income + pickups)';
+  const defaultLiveTitle = isCompact ? 'Live standings' : 'Live standings (stash)';
 
   return (
     <section className={sectionClass}>
       <p className={labelClass}>
         {title ?? (props.mode === 'live' ? defaultLiveTitle : 'Final standings')}
       </p>
+      {props.mode === 'results' ? (
+        <p className={legendClass}>
+          Income = auto tile cash · Pickups = cash bundles · Bonus = territory at the whistle
+        </p>
+      ) : null}
       <div className={listClass}>
         {props.entries.length === 0 ? (
           <div className={emptyClass}>{emptyLabel}</div>
@@ -70,9 +79,16 @@ export function Scoreboard({ title, variant = 'default', ...props }: ScoreboardP
                   className="h-2.5 w-2.5 shrink-0 rounded-full border border-white/30"
                   style={{ backgroundColor: entry.color }}
                 />
-                <span className={nameClass}>{entry.name}</span>
+                <div className="min-w-0">
+                  <span className={nameClass}>{entry.name}</span>
+                  {!isCompact ? (
+                    <p className="text-[11px] font-semibold text-slate-500">
+                      {entry.tilesOwned} tiles · +${entry.incomePerSecond}/sec
+                    </p>
+                  ) : null}
+                </div>
               </div>
-              <span className={scoreClass}>{entry.score}</span>
+              <span className={scoreClass}>${entry.score}</span>
             </div>
           ))
         ) : (
@@ -91,9 +107,9 @@ export function Scoreboard({ title, variant = 'default', ...props }: ScoreboardP
                 <span className="text-lg font-black text-slate-900">{entry.total}</span>
               </div>
               <div className="mt-2 grid grid-cols-3 gap-2 text-xs font-semibold text-slate-600">
-                <span>Tiles {entry.territory}</span>
-                <span>Cash {entry.pickups}</span>
-                <span>Bonus {entry.bonus}</span>
+                <span>Income ${entry.territory}</span>
+                <span>Pickups ${entry.pickups}</span>
+                <span>Bonus ${entry.bonus}</span>
               </div>
             </div>
           ))

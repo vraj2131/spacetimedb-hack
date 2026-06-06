@@ -138,10 +138,10 @@ test('projectGameUiState resolves host, capacity, and live standings from owned 
   assert.equal(state.lobby.capacityLabel, '2 / 10');
   assert.equal(state.spectatorCount, 1);
   assert.deepEqual(
-    state.liveStandings.map(entry => [entry.name, entry.score]),
+    state.liveStandings.map(entry => [entry.name, entry.score, entry.tilesOwned, entry.incomePerSecond]),
     [
-      ['Host', 4],
-      ['Guest', 1],
+      ['Host', 0, 2, 4],
+      ['Guest', 0, 1, 1],
     ],
   );
 });
@@ -259,7 +259,7 @@ test('projectGameUiState exposes leave and close affordances plus live cash', ()
   );
 });
 
-test('projectGameUiState live standings use accumulated income and pickup cash', () => {
+test('projectGameUiState live standings use cash stash and show territory rate', () => {
   const state = projectGameUiState(
     baseInput({
       playerStates: [
@@ -268,6 +268,7 @@ test('projectGameUiState live standings use accumulated income and pickup cash',
           roomId: ROOM_ID,
           speedUntilMs: 0,
           disabledUntilMs: 0,
+          cash: 25,
           tileIncomeTotal: 15,
           pickupCashTotal: 10,
         },
@@ -276,18 +277,24 @@ test('projectGameUiState live standings use accumulated income and pickup cash',
           roomId: ROOM_ID,
           speedUntilMs: 0,
           disabledUntilMs: 0,
+          cash: 8,
           tileIncomeTotal: 8,
           pickupCashTotal: 0,
         },
+      ],
+      tiles: [
+        { id: 1, roomId: ROOM_ID, x: 1, y: 1, ownerPlayerId: 1, incomeValue: 3 },
+        { id: 2, roomId: ROOM_ID, x: 2, y: 1, ownerPlayerId: 1, incomeValue: 1 },
+        { id: 3, roomId: ROOM_ID, x: 3, y: 1, ownerPlayerId: 2, incomeValue: 3 },
       ],
     }),
   );
 
   assert.deepEqual(
-    state.liveStandings.map(entry => [entry.name, entry.score]),
+    state.liveStandings.map(entry => [entry.name, entry.score, entry.tilesOwned, entry.incomePerSecond]),
     [
-      ['Host', 25],
-      ['Guest', 8],
+      ['Host', 25, 2, 4],
+      ['Guest', 8, 1, 3],
     ],
   );
 });
@@ -313,4 +320,5 @@ test('projectGameUiState enables collect when local player stands on active pick
 
   assert.equal(state.match.localPickupId, 7);
   assert.equal(state.match.canCollectPickup, true);
+  assert.equal(state.match.canCollect, true);
 });

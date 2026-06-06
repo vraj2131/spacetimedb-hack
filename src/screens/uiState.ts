@@ -32,6 +32,8 @@ export type LiveStanding = {
   name: string;
   color: string;
   score: number;
+  tilesOwned: number;
+  incomePerSecond: number;
   status: string;
 };
 
@@ -101,10 +103,13 @@ export type MatchViewModel = {
   localCash: number;
   localTileIncome: number;
   localPickupCash: number;
+  localTilesOwned: number;
+  localIncomePerSecond: number;
   claimHint: string;
   canLeaveRoom: boolean;
   localPickupId: number | null;
   canCollectPickup: boolean;
+  canCollect: boolean;
   localPlayerEffects: { speedBoost: boolean; stunned: boolean };
 };
 
@@ -187,6 +192,8 @@ export function createMockGameUiState(role: PlayerRole = mockRoom.localRole): Ga
     name: player.name,
     color: player.color,
     score: player.score,
+    tilesOwned: 4,
+    incomePerSecond: 3,
     status: player.status,
   }));
   const isSpectator = role === 'spectator';
@@ -266,10 +273,13 @@ export function createMockGameUiState(role: PlayerRole = mockRoom.localRole): Ga
       localCash: 12,
       localTileIncome: 7,
       localPickupCash: 5,
+      localTilesOwned: 4,
+      localIncomePerSecond: 5,
       claimHint: 'Pick Claim or Contest, then click an adjacent tile.',
       canLeaveRoom,
       localPickupId: null,
       canCollectPickup: false,
+      canCollect: false,
       localPlayerEffects: { speedBoost: false, stunned: false },
     },
     resultsView: {

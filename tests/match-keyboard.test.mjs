@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 
 const repoRoot = process.cwd();
@@ -11,7 +12,7 @@ function read(path) {
 
 test('directionForMoveKey maps WASD and arrow keys', async () => {
   const { directionForMoveKey } = await import(
-    join(repoRoot, 'src/hooks/useMatchMoveKeyboard.ts')
+    pathToFileURL(join(repoRoot, 'src/hooks/useMatchMoveKeyboard.ts')).href
   );
 
   assert.equal(directionForMoveKey('ArrowUp'), 'up');

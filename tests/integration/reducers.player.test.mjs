@@ -111,6 +111,9 @@ test('claim_tile claims an adjacent tile and writes an event', { skip }, async (
   const claimed = host.conn.db.tiles.id.find(target.id);
   assert.equal(claimed.ownerPlayerId, playerId, 'tile is owned by claimer');
 
+  const playerState = host.conn.db.player_state.playerId.find(playerId);
+  assert.equal(playerState.cash, 0, 'claim does not grant instant income');
+
   const event = await waitFor(
     () =>
       [...host.conn.db.events.iter()].find(
