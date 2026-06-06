@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSpacetimeDB, useTable } from 'spacetimedb/react';
 import { projectGameUiState } from '../adapters/projectGameUiState.ts';
 import { projectRenderState } from '../adapters/projectRenderState.ts';
@@ -42,6 +42,13 @@ const FRIENDLY_REDUCER_ERRORS: ReadonlyArray<readonly [string, string]> = [
   ['move_player: target is off the map', "Can't move that way — you're at the map edge."],
   ['move_player: cannot move onto an alley', "Can't move onto an alley tile."],
   ['claim_tile: tile is not adjacent', 'Claim an adjacent tile.'],
+  ['contest_tile: tile is not adjacent', 'Contest an adjacent tile.'],
+  ['contest_tile: tile is shielded', 'That tile is shielded!'],
+  ['contest_tile: cannot contest your own', "Can't contest your own tile."],
+  ['contest_tile: tile is not owned', 'That tile has no owner to contest.'],
+  ['collect_pickup: not on the pickup', "Move onto the pickup to collect it."],
+  ['trigger_spectator_event: not enough energy', "Not enough energy for that power."],
+  ['move_player: stunned', "You're stunned! Wait it out."],
   ['round is not live', 'Round is not live yet.'],
   ['only the host', 'Only the host can do that.'],
 ];
@@ -88,10 +95,12 @@ export function useLiveGameState(): LiveGameState {
   const [events, eventsReady] = useTable(tables.events);
   const [taunts, tauntsReady] = useTable(tables.taunts);
   const [roundResults, roundResultsReady] = useTable(tables.round_results);
+  const [spectatorStates, spectatorStatesReady] = useTable(tables.spectator_state);
 
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const didAutoEnd = useRef(false);
 
   useEffect(() => {
     if (!connected) {
@@ -117,7 +126,8 @@ export function useLiveGameState(): LiveGameState {
     pickupsReady &&
     eventsReady &&
     tauntsReady &&
-    roundResultsReady;
+    roundResultsReady &&
+    spectatorStatesReady;
 
   const localPlayer = useMemo(() => {
     if (!identity) {
@@ -155,6 +165,43 @@ export function useLiveGameState(): LiveGameState {
     },
     [conn, connected, isReady, isSubmitting],
   );
+
+  // Auto-end: host auto-calls endRound when timer expires.
+  useEffect(() => {
+    if (!room || room.state !== 'live' || !localPlayer) return;
+    const isHost = identity && room.hostIdentity.toHexString() === identity.toHexString();
+    if (!isHost) return;
+
+    const endsAt = typeof room.endsAtMs === 'bigint' ? Number(room.endsAtMs) : room.endsAtMs;
+    if (endsAt <= 0) return;
+
+    const remaining = endsAt - Date.now();
+    if (remaining <= 0 && !didAutoEnd.current) {
+      didAutoEnd.current = true;
+      void runAction(async () => {
+        await conn!.reducers.endRound({ roomId: room.id });
+      });
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      if (!didAutoEnd.current) {
+        didAutoEnd.current = true;
+        void runAction(async () => {
+          await conn!.reducers.endRound({ roomId: room.id });
+        });
+      }
+    }, Math.max(remaining, 0));
+
+    return () => window.clearTimeout(timerId);
+  }, [conn, identity, localPlayer, room, runAction]);
+
+  // Reset auto-end flag when leaving live state.
+  useEffect(() => {
+    if (room?.state !== 'live') {
+      didAutoEnd.current = false;
+    }
+  }, [room?.state]);
 
   const ensureRegistered = useCallback(
     async (name: string, role: PlayerRole) => {
@@ -232,7 +279,60 @@ export function useLiveGameState(): LiveGameState {
         if (tileId == null) {
           throw new Error(`No tile at (${x}, ${y})`);
         }
-        await conn!.reducers.claimTile({ tileId });
+        const tile = tiles.find(t => t.id === tileId);
+        if (tile && tile.ownerPlayerId != null && tile.ownerPlayerId !== localPlayer?.id) {
+          await conn!.reducers.contestTile({ tileId });
+        } else {
+          await conn!.reducers.claimTile({ tileId });
+        }
+      });
+    },
+    [conn, localPlayer?.id, roomId, runAction, tiles],
+  );
+
+  const onContestTile = useCallback(
+    (tileId: number) => {
+      void runAction(async () => {
+        await conn!.reducers.contestTile({ tileId });
+      });
+    },
+    [conn, runAction],
+  );
+
+  const onCollectPickup = useCallback(
+    (pickupId: number) => {
+      void runAction(async () => {
+        await conn!.reducers.collectPickup({ pickupId });
+      });
+    },
+    [conn, runAction],
+  );
+
+  const onSpectatorEvent = useCallback(
+    (eventType: string, targetPlayerId?: number, targetTileId?: number) => {
+      void runAction(async () => {
+        await conn!.reducers.triggerSpectatorEvent({
+          eventType,
+          targetPlayerId,
+          targetTileId,
+        });
+      });
+    },
+    [conn, runAction],
+  );
+
+  const onSpectatorTileClick = useCallback(
+    (eventType: string, x: number, y: number) => {
+      void runAction(async () => {
+        const tileId = resolveTileIdAt(tiles, roomId, x, y);
+        if (tileId == null) {
+          throw new Error(`No tile at (${x}, ${y})`);
+        }
+        await conn!.reducers.triggerSpectatorEvent({
+          eventType,
+          targetPlayerId: undefined,
+          targetTileId: tileId,
+        });
       });
     },
     [conn, roomId, runAction, tiles],
@@ -250,14 +350,22 @@ export function useLiveGameState(): LiveGameState {
       onReturnToDev: () => {},
       onMove,
       onClaimTileAt,
+      onContestTile,
+      onCollectPickup,
+      onSpectatorEvent,
+      onSpectatorTileClick,
     }),
     [
       onClaimTileAt,
+      onCollectPickup,
+      onContestTile,
       onCreateRoom,
       onEndRound,
       onJoinRoom,
       onMove,
       onRematch,
+      onSpectatorEvent,
+      onSpectatorTileClick,
       onStartRound,
     ],
   );
@@ -272,6 +380,8 @@ export function useLiveGameState(): LiveGameState {
         events,
         taunts,
         roundResults,
+        spectatorStates,
+        playerStates,
         localIdentity: identity ?? null,
         nowMs,
         connection: {
@@ -293,10 +403,12 @@ export function useLiveGameState(): LiveGameState {
       isSubmitting,
       localPlayer,
       nowMs,
+      playerStates,
       players,
       room,
       roomId,
       roundResults,
+      spectatorStates,
       taunts,
       tiles,
     ],
