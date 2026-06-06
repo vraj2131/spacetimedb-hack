@@ -75,12 +75,12 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 - [x] Phaser added as a library dependency
 - [x] Tailwind v4 wired into Vite
 - [x] Empty `PhaserGame` canvas beside React shell
-- [ ] One Maincloud publish succeeds (local publish verified)
+- [x] One Maincloud publish succeeds (local publish verified) — _published `bodega-blitz` to maincloud; schema responsive (read-only smoke)_
 
 ### Slice 2 — Room sync
 
 - [ ] Game schema replaces `sync_state` (`rooms`, `players`, `player_state`, `tiles`, …) — _tables scaffolded alongside `sync_state`; `sync_state` still drives the dev round-trip_
-- [ ] `register_player`, `create_room`, `join_room`, `start_round` reducers — _signatures scaffolded; bodies throw `not implemented`_
+- [x] `register_player`, `create_room`, `join_room`, `start_round` reducers — _implemented + integration-tested on `backend-mvp-reducers`_
 - [ ] `spacetimedb/src/map.ts` — 12×8 layout + spawn corners — _stub: dimensions + spawn corners present; full layout pending_
 - [ ] Join screen (nickname, role, optional room code)
 - [ ] Lobby screen (code, roster, host start button)
@@ -89,8 +89,8 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 
 ### Slice 3 — Claim + results
 
-- [ ] `claim_tile` reducer (adjacent only)
-- [ ] Manual `end_round` reducer
+- [x] `claim_tile` reducer (adjacent only) — _implemented + integration-tested on `backend-mvp-reducers`_
+- [x] Manual `end_round` reducer — _implemented (lazy scoring + ranking); `rematch` also landed_
 - [ ] Tile ownership colors in Phaser
 - [ ] Timer + score HUD
 - [ ] Results screen

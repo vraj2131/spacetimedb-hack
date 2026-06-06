@@ -124,6 +124,16 @@ Before Dev E live-wires the UI, backend should confirm:
 - Should timer labels derive from `endsAtMs` on the client, or should backend expose a remaining-time value?
 - Are result rows appended per round or replaced on each rematch?
 
+### Backend answers (Wave 1 — reducers landed on `backend-mvp-reducers`)
+
+- **Order:** `register_player(name, role)` is a separate first step, then `create_room()` **or** `join_room(room_code)`. Register once per identity before either.
+- **Spectator:** yes — a `players` row with `role = 'spectator'`. Spectators get no `player_state` and no spawn seat.
+- **Capacity:** players are capped at 10 (`MAX_SPAWN_SEATS`); `join_room` rejects a `player`-role join when the room is `live` or the player seats are full. **Spectators are uncapped and may join `lobby`, `live`, or `results`** (they watch live rounds — see brief acceptance test: "spectators join in lobby and live").
+- **Local player:** the `players` row whose `identity` equals the connection identity (`ctx.sender` server-side; match by `conn.identity` client-side).
+- **`rooms.state`:** exactly `lobby | live | results`.
+- **Timer:** backend exposes `startsAtMs` / `endsAtMs` on `rooms`; derive remaining time on the client from `endsAtMs`. No separate remaining-time value.
+- **Results:** appended per round — `round_results` rows carry `roundNumber`. `rematch` deletes the room's prior `round_results` (and tiles/player_state/events/pickups), increments `roundNumber`, and returns the room to `lobby`.
+
 ## Manual Review Checklist
 
 Run:

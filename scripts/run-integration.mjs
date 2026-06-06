@@ -34,43 +34,81 @@ async function serverUp() {
   }
 }
 
+// Daemon we started, if any. `spacetime start` forks a `spacetimedb-standalone`
+// child, so killing only the wrapper orphans the server. We spawn it as a
+// process-group leader (detached) and signal the whole group to tear both down.
+let daemon = null;
+
+function stopDaemon() {
+  if (!daemon) {
+    return;
+  }
+  const pid = daemon.pid;
+  daemon = null;
+  try {
+    process.kill(-pid, 'SIGTERM'); // negative pid => whole process group
+  } catch {
+    // already exited / not a group leader — nothing to clean up
+  }
+}
+
+// Ensure the daemon dies even if the runner exits abnormally.
+process.on('exit', stopDaemon);
+for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  process.on(signal, () => {
+    stopDaemon();
+    process.exit(1);
+  });
+}
+
 async function main() {
   if (!cliAvailable()) {
     console.log('[integration] skipped — spacetime CLI not found on PATH');
     return 0;
   }
 
-  let daemon = null;
   if (!(await serverUp())) {
     console.log('[integration] starting local in-memory SpacetimeDB…');
     daemon = spawn('spacetime', ['start', '--in-memory'], {
       stdio: 'ignore',
-      detached: false,
+      detached: true, // own process group, so stopDaemon() can kill the group
     });
     const start = Date.now();
     while (!(await serverUp())) {
       if (Date.now() - start > 30_000) {
-        daemon.kill('SIGTERM');
+        stopDaemon();
         console.error('[integration] server did not start within 30s');
         return 1;
       }
       await sleep(500);
     }
+    // The HTTP port answers (even 404) before the module host is ready for
+    // publishes/connections — settle briefly so the first test file doesn't race
+    // a half-initialized daemon.
+    await sleep(1500);
     console.log('[integration] server is up');
   } else {
     console.log('[integration] reusing already-running server');
   }
 
+  // Run integration files serially: they share one daemon and concurrent
+  // publishes/connections against it are flaky (especially right after start).
   const child = spawn(
     'node',
-    ['--import', 'tsx', '--test', 'tests/integration/*.test.mjs'],
+    [
+      '--import',
+      'tsx',
+      '--test',
+      '--test-concurrency=1',
+      'tests/integration/*.test.mjs',
+    ],
     { stdio: 'inherit' }
   );
   const code = await new Promise((resolve) => child.on('exit', resolve));
 
   if (daemon) {
     console.log('[integration] stopping local server');
-    daemon.kill('SIGTERM');
+    stopDaemon();
   }
   return code ?? 0;
 }
@@ -79,6 +117,7 @@ main().then(
   (code) => process.exit(code),
   (err) => {
     console.error(err);
+    stopDaemon();
     process.exit(1);
   }
 );
