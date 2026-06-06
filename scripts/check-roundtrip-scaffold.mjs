@@ -58,7 +58,6 @@ const STUB_REDUCERS = [
   ['rematch', files.reducersRoom],
   ['reset_demo_room', files.reducersRoom],
   ['tick_round', files.reducersRoom],
-  ['claim_tile', files.reducersPlayer],
   ['contest_tile', files.reducersPlayer],
   ['collect_pickup', files.reducersPlayer],
   ['trigger_spectator_event', files.reducersSpectator],
@@ -120,6 +119,12 @@ const checks = [
     files.reducersRoom.includes("name: 'join_room'") &&
       !files.reducersRoom.includes('not implemented: join_room') &&
       files.reducersRoom.includes('ctx.db.rooms.code.find'),
+  ],
+  [
+    'claim_tile is implemented (sets tile ownership)',
+    files.reducersPlayer.includes("name: 'claim_tile'") &&
+      !files.reducersPlayer.includes('not implemented: claim_tile') &&
+      files.reducersPlayer.includes('ctx.db.tiles.id.update'),
   ],
 
   // --- server: barrel + map ----------------------------------------------
