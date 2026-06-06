@@ -35,6 +35,9 @@ test('Dev E adapter exposes backend handoff view models and actions', () => {
     'recentTaunt',
     'canStartRound',
     'canRematch',
+    'onMove',
+    'onClaimTileAt',
+    'actionStatusLabel',
   ]) {
     assert.match(uiState, new RegExp(`\\b${expectedField}\\b`));
   }
@@ -44,6 +47,7 @@ test('App preserves the dev scaffold while exposing the Dev E screen flow', () =
   const app = read('src/App.tsx');
 
   assert.match(app, /useState<Screen>\('dev'\)/);
+  assert.match(app, /useLiveGameState/);
   assert.match(app, /navigateToJoin/);
   assert.match(app, /<DevSync/);
   assert.match(app, /Start Bodega Blitz/);

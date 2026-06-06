@@ -12,7 +12,10 @@
     "test:unit": "node --experimental-strip-types --test tests/*.test.mjs",
     "test:integration": "node scripts/run-integration.mjs",
     "spacetime:generate": "spacetime generate --lang typescript --out-dir src/module_bindings --module-path spacetimedb",
-    "spacetime:publish:local": "spacetime publish bodega-blitz --module-path spacetimedb --server local",
+    "spacetime:status:local": "node scripts/spacetime-status-local.mjs",
+    "spacetime:kill:local": "node scripts/spacetime-kill-local.mjs",
+    "spacetime:publish:local": "node scripts/publish-local.mjs",
+    "spacetime:reset:local": "spacetime delete bodega-blitz --server local --yes && node scripts/publish-local.mjs",
     "spacetime:publish": "spacetime publish bodega-blitz --module-path spacetimedb --server maincloud"
   },
   "dependencies": {

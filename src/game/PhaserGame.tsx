@@ -19,15 +19,22 @@ export function PhaserGame({
   localPlayerId,
   viewportWidth = DEFAULT_VIEWPORT_WIDTH,
   viewportHeight = DEFAULT_VIEWPORT_HEIGHT,
+  onTileClick,
 }: {
   renderState?: RenderState;
   cameraMode?: CameraMode;
   localPlayerId?: number;
   viewportWidth?: number;
   viewportHeight?: number;
+  onTileClick?: (x: number, y: number) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
+  const onTileClickRef = useRef(onTileClick);
+
+  useEffect(() => {
+    onTileClickRef.current = onTileClick;
+  }, [onTileClick]);
 
   useEffect(() => {
     const parent = containerRef.current;
@@ -48,7 +55,7 @@ export function PhaserGame({
     gameRef.current = game;
 
     const offTileClick = EventBus.on('tile:click', ({ x, y }) => {
-      console.info('[PhaserGame] tile:click', { x, y });
+      onTileClickRef.current?.(x, y);
     });
 
     EventBus.emit('renderState:update', renderState);

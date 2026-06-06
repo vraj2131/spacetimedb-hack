@@ -5,20 +5,20 @@ import { projectRenderState } from '../adapters/projectRenderState.ts';
 import { resolveTileIdAt } from '../adapters/resolveTileId.ts';
 import { DbConnection, tables } from '../module_bindings/index.ts';
 import { EMPTY_RENDER_STATE, type RenderState } from '../renderState.ts';
-import type { GameUiActions, GameUiState, PlayerRole } from '../screens/uiState.ts';
+import type {
+  GameUiActions,
+  GameUiState,
+  MoveDirection,
+  PlayerRole,
+} from '../screens/uiState.ts';
 
-export type MoveDirection = 'up' | 'down' | 'left' | 'right';
-
-export type LiveGameActions = GameUiActions & {
-  onMove: (direction: MoveDirection) => void;
-  onClaimTileAt: (x: number, y: number) => void;
-};
+export type { MoveDirection };
 
 export type LiveGameState = {
   gameUiState: GameUiState;
   renderState: RenderState;
   localPlayerId: number | null;
-  actions: LiveGameActions;
+  actions: GameUiActions;
   isReady: boolean;
   isSubmitting: boolean;
   actionError: string | null;
@@ -26,11 +26,53 @@ export type LiveGameState = {
 
 const DEFAULT_PLAYER_NAME = 'Player';
 
+/**
+ * Friendly text for known reducer rejections. Reducers throw `SenderError`
+ * for expected validation failures, so the real message (e.g.
+ * `join_room: room not found`) reaches the client. A plain `InternalError`
+ * ("The instance encountered a fatal error.") is a genuine module crash —
+ * usually a stale/corrupt local DB — and is handled separately below.
+ */
+const FRIENDLY_REDUCER_ERRORS: ReadonlyArray<readonly [string, string]> = [
+  ['join_room: room not found', 'No room with that code. Double-check it, or create a new room.'],
+  ['join_room: round is in progress', 'That round is already underway — join as a spectator to watch.'],
+  ['join_room: room is full', 'That room is full.'],
+  ['join_room: caller is already in a room', "You're already in a room."],
+  ['create_room: caller is already in a room', "You're already in a room."],
+  ['move_player: target is off the map', "Can't move that way — you're at the map edge."],
+  ['move_player: cannot move onto an alley', "Can't move onto an alley tile."],
+  ['claim_tile: tile is not adjacent', 'Claim an adjacent tile.'],
+  ['round is not live', 'Round is not live yet.'],
+  ['only the host', 'Only the host can do that.'],
+];
+
 function reducerErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message.trim().length > 0) {
-    return error.message;
+  if (!(error instanceof Error)) {
+    return 'Action failed';
   }
-  return 'Action failed';
+
+  const message = error.message.trim();
+
+  // Genuine module crash (stale/corrupt local DB or a module bug): the server
+  // reports a detail-free fatal error. Expected validation failures are
+  // SenderError and carry a usable message, handled below.
+  if (error.name === 'InternalError' || message.includes('fatal error')) {
+    return 'The game server hit an internal error. If this keeps happening, run `npm run spacetime:reset:local` and reload.';
+  }
+
+  if (message.length === 0) {
+    return 'Action failed';
+  }
+
+  for (const [needle, friendly] of FRIENDLY_REDUCER_ERRORS) {
+    if (message.includes(needle)) {
+      return friendly;
+    }
+  }
+
+  // Fall back to the server message without the internal `reducer_name:` prefix.
+  const stripped = message.replace(/^[a-z_]+:\s*/, '');
+  return stripped.charAt(0).toUpperCase() + stripped.slice(1);
 }
 
 export function useLiveGameState(): LiveGameState {
@@ -96,6 +138,10 @@ export function useLiveGameState(): LiveGameState {
       if (!conn || !connected || isSubmitting) {
         return;
       }
+      if (!isReady) {
+        setActionError('Waiting for live data to sync...');
+        return;
+      }
 
       setIsSubmitting(true);
       setActionError(null);
@@ -107,7 +153,7 @@ export function useLiveGameState(): LiveGameState {
         setIsSubmitting(false);
       }
     },
-    [conn, connected, isSubmitting],
+    [conn, connected, isReady, isSubmitting],
   );
 
   const ensureRegistered = useCallback(
@@ -192,7 +238,7 @@ export function useLiveGameState(): LiveGameState {
     [conn, roomId, runAction, tiles],
   );
 
-  const actions = useMemo<LiveGameActions>(
+  const actions = useMemo<GameUiActions>(
     () => ({
       onCreateRoom,
       onJoinRoom,
@@ -200,6 +246,7 @@ export function useLiveGameState(): LiveGameState {
       onEndRound,
       onRematch,
       onBackToLobby: () => {},
+      onReturnToMatch: () => {},
       onReturnToDev: () => {},
       onMove,
       onClaimTileAt,
@@ -269,6 +316,12 @@ export function useLiveGameState(): LiveGameState {
         : EMPTY_RENDER_STATE,
     [nowMs, pickups, playerStates, players, room, roomId, tiles],
   );
+
+  useEffect(() => {
+    if (isReady) {
+      setActionError(null);
+    }
+  }, [isReady, roomId, gameUiState.roomState]);
 
   return {
     gameUiState,

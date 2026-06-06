@@ -1,6 +1,7 @@
-import { t } from 'spacetimedb/server';
+import { t, SenderError } from 'spacetimedb/server';
 import spacetimedb from './schema';
 import { MAP_WIDTH, MAP_HEIGHT, tileTypeAt } from './map';
+import { gridCoord, timestampMs } from './time';
 
 /**
  * Player action reducers.
@@ -28,14 +29,14 @@ export const registerPlayer = spacetimedb.reducer(
   (ctx, { name, role }) => {
     const trimmed = name.trim();
     if (trimmed === '') {
-      throw new Error('register_player: name must not be empty');
+      throw new SenderError('register_player: name must not be empty');
     }
     if (role !== 'player' && role !== 'spectator') {
-      throw new Error("register_player: role must be 'player' or 'spectator'");
+      throw new SenderError("register_player: role must be 'player' or 'spectator'");
     }
     // One registration per identity.
     if ([...ctx.db.players.identity.filter(ctx.sender)][0]) {
-      throw new Error('register_player: caller is already registered');
+      throw new SenderError('register_player: caller is already registered');
     }
 
     const color = PLAYER_COLORS[Number(ctx.db.players.count()) % PLAYER_COLORS.length];
@@ -48,7 +49,7 @@ export const registerPlayer = spacetimedb.reducer(
       role,
       color,
       connected: true,
-      joinedAtMs: ctx.timestamp.toMillis(),
+      joinedAtMs: timestampMs(ctx),
     });
   }
 );
@@ -60,29 +61,29 @@ export const movePlayer = spacetimedb.reducer(
   (ctx, { direction }) => {
     const step = STEP[direction];
     if (!step) {
-      throw new Error(`move_player: unknown direction '${direction}'`);
+      throw new SenderError(`move_player: unknown direction '${direction}'`);
     }
 
     const player = [...ctx.db.players.identity.filter(ctx.sender)][0];
     if (!player) {
-      throw new Error('move_player: caller is not a registered player');
+      throw new SenderError('move_player: caller is not a registered player');
     }
     if (player.role !== 'player') {
-      throw new Error('move_player: only players can move');
+      throw new SenderError('move_player: only players can move');
     }
 
     const room = ctx.db.rooms.id.find(player.roomId);
     if (!room || room.state !== 'live') {
-      throw new Error('move_player: round is not live');
+      throw new SenderError('move_player: round is not live');
     }
 
     const state = ctx.db.player_state.playerId.find(player.id);
     if (!state) {
-      throw new Error('move_player: no player_state (round not started)');
+      throw new SenderError('move_player: no player_state (round not started)');
     }
 
-    const targetX = state.x + step.dx;
-    const targetY = state.y + step.dy;
+    const targetX = gridCoord(state.x) + step.dx;
+    const targetY = gridCoord(state.y) + step.dy;
 
     // Bounds: reject off-map; do not clamp or wrap.
     if (
@@ -91,17 +92,17 @@ export const movePlayer = spacetimedb.reducer(
       targetX >= MAP_WIDTH ||
       targetY >= MAP_HEIGHT
     ) {
-      throw new Error('move_player: target is off the map');
+      throw new SenderError('move_player: target is off the map');
     }
     if (tileTypeAt(targetX, targetY) === 'alley') {
-      throw new Error('move_player: cannot move onto an alley tile');
+      throw new SenderError('move_player: cannot move onto an alley tile');
     }
 
     ctx.db.player_state.playerId.update({
       ...state,
       x: targetX,
       y: targetY,
-      lastMoveAtMs: ctx.timestamp.toMillis(),
+      lastMoveAtMs: timestampMs(ctx),
     });
   }
 );
@@ -116,37 +117,39 @@ export const claimTile = spacetimedb.reducer(
   (ctx, { tileId }) => {
     const player = [...ctx.db.players.identity.filter(ctx.sender)][0];
     if (!player) {
-      throw new Error('claim_tile: caller is not a registered player');
+      throw new SenderError('claim_tile: caller is not a registered player');
     }
     if (player.role !== 'player') {
-      throw new Error('claim_tile: only players can claim');
+      throw new SenderError('claim_tile: only players can claim');
     }
 
     const room = ctx.db.rooms.id.find(player.roomId);
     if (!room || room.state !== 'live') {
-      throw new Error('claim_tile: round is not live');
+      throw new SenderError('claim_tile: round is not live');
     }
 
     const state = ctx.db.player_state.playerId.find(player.id);
     if (!state) {
-      throw new Error('claim_tile: no player_state (round not started)');
+      throw new SenderError('claim_tile: no player_state (round not started)');
     }
 
     const tile = ctx.db.tiles.id.find(tileId);
     if (!tile) {
-      throw new Error('claim_tile: tile not found');
+      throw new SenderError('claim_tile: tile not found');
     }
     if (tile.roomId !== player.roomId) {
-      throw new Error('claim_tile: tile belongs to another room');
+      throw new SenderError('claim_tile: tile belongs to another room');
     }
     if (tile.tileType === 'alley') {
-      throw new Error('claim_tile: cannot claim an alley tile');
+      throw new SenderError('claim_tile: cannot claim an alley tile');
     }
 
     // Manhattan-adjacent only (no diagonal, no claiming your own cell).
-    const distance = Math.abs(tile.x - state.x) + Math.abs(tile.y - state.y);
+    const distance =
+      Math.abs(gridCoord(tile.x) - gridCoord(state.x)) +
+      Math.abs(gridCoord(tile.y) - gridCoord(state.y));
     if (distance !== 1) {
-      throw new Error('claim_tile: tile is not adjacent');
+      throw new SenderError('claim_tile: tile is not adjacent');
     }
 
     // The brief specifies "reject+clear if pigeon-blocked", but SpacetimeDB
@@ -163,7 +166,7 @@ export const claimTile = spacetimedb.reducer(
 
     ctx.db.tiles.id.update({ ...tile, ownerPlayerId: player.id });
 
-    const nowMs = ctx.timestamp.toMillis();
+    const nowMs = timestampMs(ctx);
     ctx.db.events.insert({
       id: 0n, // auto-increment
       roomId: player.roomId,
@@ -171,7 +174,7 @@ export const claimTile = spacetimedb.reducer(
       sourcePlayerId: player.id,
       targetPlayerId: undefined,
       targetTileId: tile.id,
-      message: `${player.name} claimed (${tile.x},${tile.y})`,
+      message: `${player.name} claimed (${gridCoord(tile.x)},${gridCoord(tile.y)})`,
       createdAtMs: nowMs,
       expiresAtMs: nowMs + CLAIM_EVENT_TTL_MS,
     });

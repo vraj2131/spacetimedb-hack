@@ -8,6 +8,7 @@ export type GameStageProps = {
   renderState?: RenderState;
   cameraMode?: CameraMode;
   localPlayerId?: number;
+  onTileClick?: (x: number, y: number) => void;
 };
 
 type StageSize = {
@@ -20,6 +21,7 @@ export function GameStage({
   renderState,
   cameraMode,
   localPlayerId,
+  onTileClick,
 }: GameStageProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<StageSize | null>(null);
@@ -50,6 +52,7 @@ export function GameStage({
               renderState={renderState}
               cameraMode={cameraMode}
               localPlayerId={localPlayerId}
+              onTileClick={onTileClick}
               viewportWidth={size.width}
               viewportHeight={size.height}
             />

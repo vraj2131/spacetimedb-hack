@@ -1,15 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { DevSync } from './components/DevSync';
+import { useLiveGameState } from './hooks/useLiveGameState.ts';
 import { JoinScreen } from './screens/Join';
 import { LobbyScreen } from './screens/Lobby';
 import { MatchScreen } from './screens/Match';
 import { ResultsScreen } from './screens/Results';
 import { JudgeScreen } from './screens/Judge';
-import {
-  createMockGameUiState,
-  type GameUiActions,
-  type PlayerRole,
-} from './screens/uiState';
+import type { GameUiActions, GameUiState } from './screens/uiState';
 
 /** Every top-level view the app can show. `dev` is the Phase 0 scaffold proof. */
 export type Screen = 'dev' | 'join' | 'lobby' | 'match' | 'results' | 'judge';
@@ -20,50 +17,65 @@ export interface ScreenProps {
 }
 
 /**
- * Dumb router.
+ * Live router.
  *
- * Holds the current screen in local state and renders the matching component —
- * nothing more. Real navigation (driven by room/connection state) and global
- * state (identity, role, room code) land with the gameplay slices. Until then
- * it defaults to the `dev` scaffold screen.
+ * Keeps the Phase 0 `dev` scaffold as the default entry, then auto-routes game
+ * screens from subscribed room state once the player leaves `dev` / `judge`.
  */
 function App() {
   const [screen, setScreen] = useState<Screen>('dev');
-  const [gameUiState, setGameUiState] = useState(() => createMockGameUiState());
+  const { gameUiState, renderState, localPlayerId, actions: liveActions } = useLiveGameState();
+  const prevRoomIdRef = useRef<number | null>(null);
+  const prevRoomStateRef = useRef<GameUiState['roomState'] | null>(null);
 
-  const updateMockRole = (role: PlayerRole) => {
-    setGameUiState(createMockGameUiState(role));
-  };
+  useEffect(() => {
+    if (screen === 'dev' || screen === 'judge') {
+      return;
+    }
+
+    const { roomId, roomState } = gameUiState;
+    const prevRoomId = prevRoomIdRef.current;
+    const prevRoomState = prevRoomStateRef.current;
+
+    if (roomId === 0) {
+      prevRoomIdRef.current = roomId;
+      prevRoomStateRef.current = roomState;
+      if (screen !== 'join') {
+        setScreen('join');
+      }
+      return;
+    }
+
+    const roomChanged = prevRoomId !== roomId;
+    const stateChanged = prevRoomState !== roomState;
+    const isFirstRoute = prevRoomId === null;
+
+    prevRoomIdRef.current = roomId;
+    prevRoomStateRef.current = roomState;
+
+    if (!isFirstRoute && !roomChanged && !stateChanged) {
+      return;
+    }
+
+    const targetScreen: Screen =
+      roomState === 'live' ? 'match' : roomState === 'results' ? 'results' : 'lobby';
+
+    setScreen(targetScreen);
+  }, [gameUiState.roomId, gameUiState.roomState, screen]);
 
   const navigateToJoin = () => {
     setScreen('join');
   };
 
-  const actions: GameUiActions = {
-    onCreateRoom: (_name, role) => {
-      updateMockRole(role);
-      setScreen('lobby');
-    },
-    onJoinRoom: (_name, role, _roomCode) => {
-      updateMockRole(role);
-      setScreen('lobby');
-    },
-    onStartRound: () => {
-      setScreen('match');
-    },
-    onEndRound: () => {
-      setScreen('results');
-    },
-    onRematch: () => {
-      setScreen('match');
-    },
-    onBackToLobby: () => {
-      setScreen('lobby');
-    },
-    onReturnToDev: () => {
-      setScreen('dev');
-    },
-  };
+  const actions = useMemo<GameUiActions>(
+    () => ({
+      ...liveActions,
+      onBackToLobby: () => setScreen('lobby'),
+      onReturnToMatch: () => setScreen('match'),
+      onReturnToDev: () => setScreen('dev'),
+    }),
+    [liveActions],
+  );
 
   switch (screen) {
     case 'join':
@@ -71,7 +83,14 @@ function App() {
     case 'lobby':
       return <LobbyScreen viewModel={gameUiState.lobby} actions={actions} />;
     case 'match':
-      return <MatchScreen viewModel={gameUiState.match} actions={actions} />;
+      return (
+        <MatchScreen
+          viewModel={gameUiState.match}
+          actions={actions}
+          renderState={renderState}
+          localPlayerId={localPlayerId}
+        />
+      );
     case 'results':
       return <ResultsScreen viewModel={gameUiState.resultsView} actions={actions} />;
     case 'judge':
@@ -84,10 +103,10 @@ function App() {
             <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
-                  Dev E review lane
+                  Bodega Blitz
                 </p>
                 <p className="text-sm font-semibold text-slate-700">
-                  Phase 0 stays below; enter the mocked game screens from here.
+                  Phase 0 scaffold stays below. Enter the live game flow from here.
                 </p>
               </div>
               <button

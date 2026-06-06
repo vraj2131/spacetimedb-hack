@@ -38,7 +38,7 @@ export function ResultsScreen({ viewModel, actions }: ResultsScreenProps) {
               disabled={!viewModel.canRematch}
               className="rounded-md bg-teal-700 px-5 py-3 text-sm font-black uppercase tracking-wide text-white"
             >
-              Mock rematch
+              Rematch
             </button>
             <button
               type="button"

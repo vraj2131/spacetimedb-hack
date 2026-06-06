@@ -24,9 +24,14 @@ test('Match screen uses fullscreen GameStage instead of BoardShell', () => {
   assert.doesNotMatch(match, /BoardShell/);
   assert.doesNotMatch(match, /<PhaserGame/);
   assert.match(match, /GameStage/);
+  assert.match(match, /renderState=\{renderState\}/);
+  assert.match(match, /onTileClick=\{handleTileClick\}/);
   assert.match(match, /cameraMode="overview"/);
   assert.match(match, /match-screen/);
   assert.match(match, /match-overlay/);
+  assert.match(match, /End round/);
+  assert.match(match, /actions\.onMove/);
+  assert.match(match, /actions\.onClaimTileAt/);
 });
 
 test('DevSync scaffold still uses the boxed panel layout', () => {

@@ -1,4 +1,4 @@
-import { t } from 'spacetimedb/server';
+import { t, SenderError } from 'spacetimedb/server';
 import spacetimedb from './schema';
 import {
   MAP_WIDTH,
@@ -10,6 +10,7 @@ import {
   type TileType,
 } from './map';
 import { ownershipBonusForTileType, rankResults } from './scoring';
+import { timestampMs } from './time';
 
 /**
  * Room lifecycle reducers.
@@ -30,13 +31,13 @@ const CODE_LENGTH = 6;
 export const createRoom = spacetimedb.reducer({ name: 'create_room' }, ctx => {
   const caller = [...ctx.db.players.identity.filter(ctx.sender)][0];
   if (!caller) {
-    throw new Error('create_room: caller is not a registered player');
+    throw new SenderError('create_room: caller is not a registered player');
   }
   if (caller.roomId !== 0) {
-    throw new Error('create_room: caller is already in a room');
+    throw new SenderError('create_room: caller is already in a room');
   }
 
-  const nowMs = ctx.timestamp.toMillis();
+  const nowMs = timestampMs(ctx);
 
   // Generate a 6-char code unique across existing rooms (retry on collision).
   let code = '';
@@ -76,35 +77,35 @@ export const joinRoom = spacetimedb.reducer(
     const code = roomCode.trim().toUpperCase();
     const room = ctx.db.rooms.code.find(code);
     if (!room) {
-      throw new Error('join_room: room not found');
+      throw new SenderError('join_room: room not found');
     }
 
     const caller = [...ctx.db.players.identity.filter(ctx.sender)][0];
     if (!caller) {
-      throw new Error('join_room: caller is not a registered player');
+      throw new SenderError('join_room: caller is not a registered player');
     }
     if (caller.roomId !== 0) {
-      throw new Error('join_room: caller is already in a room');
+      throw new SenderError('join_room: caller is already in a room');
     }
 
     // Players can only join a lobby/results room with an open seat; spectators
     // may join at any time (including a live round) to watch.
     if (caller.role === 'player') {
       if (room.state === 'live') {
-        throw new Error('join_room: round is in progress');
+        throw new SenderError('join_room: round is in progress');
       }
       const seatedPlayers = [...ctx.db.players.roomId.filter(room.id)].filter(
         p => p.role === 'player'
       ).length;
       if (seatedPlayers >= MAX_SPAWN_SEATS) {
-        throw new Error('join_room: room is full');
+        throw new SenderError('join_room: room is full');
       }
     }
 
     ctx.db.players.id.update({
       ...caller,
       roomId: room.id,
-      joinedAtMs: ctx.timestamp.toMillis(),
+      joinedAtMs: timestampMs(ctx),
     });
   }
 );
@@ -116,17 +117,17 @@ export const startRound = spacetimedb.reducer(
   (ctx, { roomId }) => {
     const room = ctx.db.rooms.id.find(roomId);
     if (!room) {
-      throw new Error('start_round: room not found');
+      throw new SenderError('start_round: room not found');
     }
     if (room.hostIdentity.toHexString() !== ctx.sender.toHexString()) {
-      throw new Error('start_round: only the host can start the round');
+      throw new SenderError('start_round: only the host can start the round');
     }
     // Must be in lobby — this also guards against double-seeding a live round.
     if (room.state !== 'lobby') {
-      throw new Error('start_round: room is not in lobby');
+      throw new SenderError('start_round: room is not in lobby');
     }
 
-    const nowMs = ctx.timestamp.toMillis();
+    const nowMs = timestampMs(ctx);
 
     // Re-seed the board: clear this room's tiles, then insert all 560 cells.
     ctx.db.tiles.roomId.delete(roomId);
@@ -199,13 +200,13 @@ export const endRound = spacetimedb.reducer(
   (ctx, { roomId }) => {
     const room = ctx.db.rooms.id.find(roomId);
     if (!room) {
-      throw new Error('end_round: room not found');
+      throw new SenderError('end_round: room not found');
     }
     if (room.hostIdentity.toHexString() !== ctx.sender.toHexString()) {
-      throw new Error('end_round: only the host can end the round');
+      throw new SenderError('end_round: only the host can end the round');
     }
     if (room.state !== 'live') {
-      throw new Error('end_round: room is not live');
+      throw new SenderError('end_round: room is not live');
     }
 
     const roomTiles = [...ctx.db.tiles.roomId.filter(roomId)];
@@ -221,7 +222,10 @@ export const endRound = spacetimedb.reducer(
         continue;
       }
       const owned = roomTiles.filter(tile => tile.ownerPlayerId === player.id);
-      const tileScore = owned.reduce((sum, tile) => sum + tile.incomeValue, 0);
+      const tileScore = owned.reduce(
+        (sum, tile) => sum + Number(tile.incomeValue),
+        0,
+      );
       const ownershipBonus = owned.reduce(
         (sum, tile) => sum + ownershipBonusForTileType(tile.tileType as TileType),
         0
@@ -261,13 +265,13 @@ export const rematch = spacetimedb.reducer(
   (ctx, { roomId }) => {
     const room = ctx.db.rooms.id.find(roomId);
     if (!room) {
-      throw new Error('rematch: room not found');
+      throw new SenderError('rematch: room not found');
     }
     if (room.hostIdentity.toHexString() !== ctx.sender.toHexString()) {
-      throw new Error('rematch: only the host can rematch');
+      throw new SenderError('rematch: only the host can rematch');
     }
     if (room.state !== 'results') {
-      throw new Error('rematch: room is not in results');
+      throw new SenderError('rematch: room is not in results');
     }
 
     // Clear the finished round's per-room rows; keep the room + its players.
