@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { CountdownOverlay } from '../components/CountdownOverlay';
 import { GameStage } from '../components/GameStage';
 import { Hud } from '../components/Hud';
@@ -25,6 +26,15 @@ const MOVE_BUTTONS: Array<{ direction: MoveDirection; label: string; className?:
   { direction: 'right', label: 'Right', className: 'col-start-3 row-start-2' },
 ];
 
+function controlToEventType(controlId: string): string | null {
+  switch (controlId) {
+    case 'boost': return 'coffee_boost';
+    case 'spill': return 'spill_slick';
+    case 'shield': return 'deli_shield';
+    default: return null;
+  }
+}
+
 export function MatchScreen({
   viewModel,
   actions,
@@ -32,11 +42,15 @@ export function MatchScreen({
   localPlayerId,
 }: MatchScreenProps) {
   const canPlay = !viewModel.isSpectator && viewModel.roomState === 'live';
+  const [spectatorTarget, setSpectatorTarget] = useState<string | null>(null);
 
   const handleTileClick = (x: number, y: number) => {
-    if (!canPlay) {
+    if (viewModel.isSpectator && spectatorTarget) {
+      actions.onSpectatorTileClick(spectatorTarget, x, y);
+      setSpectatorTarget(null);
       return;
     }
+    if (!canPlay) return;
     actions.onClaimTileAt(x, y);
   };
 
@@ -110,32 +124,58 @@ export function MatchScreen({
             </div>
 
             {canPlay ? (
-              <div className="mt-3 grid max-w-[12rem] grid-cols-3 gap-2">
-                {MOVE_BUTTONS.map(button => (
-                  <button
-                    key={button.direction}
-                    type="button"
-                    className={`${moveButtonClass} ${button.className ?? ''}`}
-                    onClick={() => actions.onMove(button.direction)}
-                  >
-                    {button.label}
-                  </button>
-                ))}
-              </div>
+              <>
+                {viewModel.localPlayerEffects.stunned && (
+                  <div className="mt-2 rounded-md border border-red-400/50 bg-red-900/40 px-3 py-2 text-center text-xs font-black uppercase text-red-200">
+                    Stunned!
+                  </div>
+                )}
+                {viewModel.localPlayerEffects.speedBoost && (
+                  <div className="mt-2 rounded-md border border-cyan-400/50 bg-cyan-900/40 px-3 py-2 text-center text-xs font-black uppercase text-cyan-200">
+                    Speed Boost!
+                  </div>
+                )}
+                <div className="mt-3 grid max-w-[12rem] grid-cols-3 gap-2">
+                  {MOVE_BUTTONS.map(button => (
+                    <button
+                      key={button.direction}
+                      type="button"
+                      className={`${moveButtonClass} ${button.className ?? ''}`}
+                      onClick={() => actions.onMove(button.direction)}
+                      disabled={viewModel.localPlayerEffects.stunned}
+                    >
+                      {button.label}
+                    </button>
+                  ))}
+                </div>
+              </>
             ) : (
               <div className="mt-2 flex flex-wrap gap-2">
-                {viewModel.controls.map(action => (
-                  <div
-                    key={action.id}
-                    className={`rounded-md border px-3 py-2 text-center text-xs font-black uppercase tracking-wide ${
-                      action.enabled
-                        ? 'border-yellow-300/30 bg-slate-900/80 text-yellow-100'
-                        : 'border-slate-600/50 bg-slate-900/50 text-slate-500'
-                    }`}
-                  >
-                    {action.label}
-                  </div>
-                ))}
+                {viewModel.controls.map(control => {
+                  const eventType = controlToEventType(control.id);
+                  const isActive = spectatorTarget === eventType;
+                  return (
+                    <button
+                      key={control.id}
+                      type="button"
+                      className={`rounded-md border px-3 py-2 text-center text-xs font-black uppercase tracking-wide transition ${
+                        !control.enabled
+                          ? 'border-slate-600/50 bg-slate-900/50 text-slate-500 cursor-not-allowed'
+                          : isActive
+                            ? 'border-yellow-300 bg-yellow-800/80 text-yellow-100'
+                            : 'border-yellow-300/30 bg-slate-900/80 text-yellow-100 hover:border-yellow-200/70 hover:bg-slate-800'
+                      }`}
+                      disabled={!control.enabled}
+                      onClick={() => {
+                        if (!eventType) return;
+                        setSpectatorTarget(prev => (prev === eventType ? null : eventType));
+                      }}
+                    >
+                      {control.label}
+                      {isActive ? ' (select tile...)' : ''}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
