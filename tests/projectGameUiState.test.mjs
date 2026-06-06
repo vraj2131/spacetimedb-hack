@@ -216,6 +216,8 @@ test('projectGameUiState exposes leave and close affordances plus live cash', ()
           speedUntilMs: NOW_MS + 10_000,
           disabledUntilMs: 0,
           cash: 12,
+          tileIncomeTotal: 7,
+          pickupCashTotal: 5,
         },
       ],
     }),
@@ -223,6 +225,11 @@ test('projectGameUiState exposes leave and close affordances plus live cash', ()
   const resultsState = projectGameUiState(
     baseInput({
       room: baseRoom({ state: 'results' }),
+      connection: {
+        isConnected: true,
+        isSubmitting: false,
+        actionError: 'Finish or leave the live round before closing the room.',
+      },
       playerStates: [
         {
           playerId: 1,
@@ -230,6 +237,8 @@ test('projectGameUiState exposes leave and close affordances plus live cash', ()
           speedUntilMs: NOW_MS + 10_000,
           disabledUntilMs: 0,
           cash: 12,
+          tileIncomeTotal: 7,
+          pickupCashTotal: 5,
         },
       ],
     }),
@@ -237,10 +246,50 @@ test('projectGameUiState exposes leave and close affordances plus live cash', ()
 
   assert.equal(lobbyState.lobby.canCloseRoom, true);
   assert.equal(lobbyState.lobby.canLeaveRoom, true);
+  assert.equal(lobbyState.lobby.actionStatusLabel, '');
   assert.equal(lobbyState.match.claimHint, 'Pick Claim or Contest, then click an adjacent tile.');
   assert.equal(lobbyState.match.localCash, 12);
+  assert.equal(lobbyState.match.localTileIncome, 7);
+  assert.equal(lobbyState.match.localPickupCash, 5);
   assert.equal(resultsState.resultsView.canCloseRoom, true);
   assert.equal(resultsState.resultsView.canLeaveRoom, true);
+  assert.equal(
+    resultsState.resultsView.actionStatusLabel,
+    'Finish or leave the live round before closing the room.',
+  );
+});
+
+test('projectGameUiState live standings use accumulated income and pickup cash', () => {
+  const state = projectGameUiState(
+    baseInput({
+      playerStates: [
+        {
+          playerId: 1,
+          roomId: ROOM_ID,
+          speedUntilMs: 0,
+          disabledUntilMs: 0,
+          tileIncomeTotal: 15,
+          pickupCashTotal: 10,
+        },
+        {
+          playerId: 2,
+          roomId: ROOM_ID,
+          speedUntilMs: 0,
+          disabledUntilMs: 0,
+          tileIncomeTotal: 8,
+          pickupCashTotal: 0,
+        },
+      ],
+    }),
+  );
+
+  assert.deepEqual(
+    state.liveStandings.map(entry => [entry.name, entry.score]),
+    [
+      ['Host', 25],
+      ['Guest', 8],
+    ],
+  );
 });
 
 test('projectGameUiState enables collect when local player stands on active pickup', () => {

@@ -152,3 +152,25 @@ canvas. Tile claims require an adjacent cell; the UI correctly surfaces `Claim a
 adjacent tile.` when the click misses.
 
 **M1 status:** Live wiring smoke-verified for demo (2026-06-06).
+
+---
+
+## 9. Room leave / close smoke
+
+Run after `npm run spacetime:publish:local` so local DB includes `leave_room` and `close_room`.
+
+| Step | Actor | Action | Expected |
+|------|-------|--------|----------|
+| 1 | Guest | In **Lobby**, click **Leave room** | Guest routes to **Join**; host stays in lobby |
+| 2 | Host | Re-create room; guest re-joins | Both in lobby |
+| 3 | Host | Click **Leave room** (guest still present) | Host routes to **Join**; guest becomes host in lobby |
+| 4 | New host | **Start round** → **End round** | Both on **Results** |
+| 5 | Host | Click **Close room** | Both route to **Join**; room code invalid |
+| 6 | Host | Start round; try **Close room** from lobby (via Lobby button during live) | N/A — Close hidden during live; use **Leave room** on Match or **End round** first |
+| 7 | Host | During live match, attempt close via reducer only | UI should show error if exposed; Close is not offered mid-match |
+
+**Pass criteria:**
+
+- [ ] Leave/Close failures show a readable error on Lobby or Results (not silent)
+- [ ] Successful leave/close routes both clients to Join when appropriate
+- [ ] Host can choose Leave (transfer) or Close (teardown) from lobby/results

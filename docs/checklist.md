@@ -2,7 +2,7 @@
 
 Living progress tracker for the project. Check items off as they land (`- [x]`). Leave pending items unchecked (`- [ ]`).
 
-Last updated: June 6, 2026 (Wave 1 backend complete; M1 live client wiring merged via L2A–L2C — adapters, `useLiveGameState`, screen/router wiring, live Match `RenderState`. Browser smoke is the next gate: `docs/M1_SMOKE_TEST.md`.)
+Last updated: June 6, 2026 (Room lifecycle: leave/close reducers + UI wiring with visible errors; live standings aligned to server income fields.)
 
 ---
 
@@ -96,6 +96,15 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 - [x] Results screen — _live `round_results` + host rematch_
 - [x] Two clients agree on winner — _server `end_round` scores; verify in browser smoke_
 
+### Slice 2b — Room lifecycle
+
+- [x] `leave_room` reducer (host transfer, empty-room delete, spectator cleanup)
+- [x] `close_room` reducer (host-only, lobby/results only)
+- [x] Leave + Close buttons on Lobby, Match, Results
+- [x] Action errors visible on Lobby and Results (not just Match)
+- [x] Auto-route to Join when `player.roomId === 0`
+- [ ] Room leave/close browser smoke — _see `docs/M1_SMOKE_TEST.md` section 9_
+
 ### Slice 4 — Scoring + auto-end
 
 - [x] Scheduled-table / `tick_round` spike verified and integrated into the live module
@@ -130,7 +139,7 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 
 ### Slice 8 — Phaser sprites
 
-- [x] Texture atlas in `public/assets/` — _Dev D shipped `game.png` + `game.json` (17 frames); `BoardScene` loads it in preload_
+- [x] Texture atlas in `public/assets/` — _Kenney `game.png` + `game.json`; `BoardScene` loads it in preload_
 - [x] Replace primitives with tile / token / pickup sprites — _Kenney atlas with circle/polygon fallbacks when load fails_
 - [x] Effect overlays (spill, shield, speed) — _fx_* atlas frames on tile overlay layer_
 - [ ] Idle / walk animations (if time)
@@ -149,7 +158,7 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 ### Slice 10 — Polish
 
 - [ ] NYC bodega theme pass
-- [ ] `CountdownOverlay`
+- [x] `CountdownOverlay` — _used on Match screen_
 - [ ] Basic SFX
 - [ ] Winner state
 - [ ] Mobile touch controls

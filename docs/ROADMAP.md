@@ -28,7 +28,10 @@ spectator energy regen, auto round-end, contest, pickups, spectator powers,
 `post_taunt`, and the live/static flavor worker path are implemented and covered
 by integration or unit tests.
 
-1. **Browser smoke not CI-gated** — run the two-client checklist in `docs/M1_SMOKE_TEST.md` (includes claim, contest, collect, auto-end).
+**Room lifecycle:** `leave_room` and `close_room` reducers with Lobby/Match/Results UI wiring,
+visible action errors on all room screens, and auto-route back to Join when `player.roomId` resets to `0`.
+
+1. **Browser smoke not CI-gated** — run the two-client checklist in `docs/M1_SMOKE_TEST.md` (includes claim, contest, collect, auto-end, leave/close).
 2. **L4 UI polish** — `EventFeed`, `SpectatorBar`, `TauntBubble`, and Judge projector view remain open.
 3. **Judge/resilience and polish** — refresh/no-leakage acceptance, SFX/mobile, and deployment hardening remain open.
 
@@ -68,7 +71,11 @@ end → results → rematch.
   - ~~Wire screens in `App.tsx`~~ — Join/Lobby/Match/Results on live data; auto-route on `room.state`.
   - ~~`tile:click` → `resolveTileIdAt` → `claimTile`~~ — done.
   - ~~Match passes live `renderState`~~ — done; `MOCK_RENDER_STATE` only in Dev sync.
-  - **Remaining M1 gate:** browser smoke per `docs/M1_SMOKE_TEST.md`.
+  - ~~M1 browser smoke~~ — verified 2026-06-06 per `docs/M1_SMOKE_TEST.md`.
+- **L2 (room lifecycle):**
+  - ~~`leave_room` / `close_room` reducers~~ — done + integration-tested.
+  - ~~Lobby/Match/Results Leave + Close buttons~~ — done; errors surface on all room screens.
+  - ~~Auto-route to Join when `roomId === 0`~~ — done in `App.tsx`.
 - **L1 (parallel):** auto-end when `endsAtMs` passes (lazy check in an action reducer, or scheduled
   `tick_round` if the spike holds — `docs/spike-findings.md`). Manual `end_round` stays as fallback.
 - **L3 (parallel, non-blocking):** Rendering **Stage A** — Kenney atlas for tiles, tokens, pickups, and fx overlays with primitive fallbacks. _(L3A landed.)_
@@ -87,6 +94,21 @@ end → results → rematch.
 ### M3 — Custom art + polish
 - **L3:** Rendering **Stage B** — custom Blender 3D→2D bakes replace Kenney frames.
 - **L4:** `Judge.tsx` projector view, announcer recap on Results, countdown, SFX, winner state, mobile touch, rematch-flow polish.
+
+### Cash / scoring model (server truth)
+
+During a live round, `player_state.cash` is the running total (tile income + pickup cash).
+Live standings show `tileIncomeTotal + pickupCashTotal` (ownership bonus applies only at round end).
+
+At `end_round` (`roundEnd.ts` + `scoring.ts`):
+
+- **`tileScore`** — accumulated tile income (`tileIncomeTotal`), with a lazy fallback to owned-tile snapshot
+- **`cashScore`** — `pickupCashTotal` only (cash pickups, not full stash)
+- **`ownershipBonus`** — bodega +10 / street +3 / alley +0 per owned tile at the whistle
+- **`totalScore`** — sum of the three
+
+Per-tick income: street 1, bodega 3, alley 0 (`map.ts` → `tick_round`).
+Cash pickups: 4× per round, +5 each, auto-collected on step.
 
 ---
 

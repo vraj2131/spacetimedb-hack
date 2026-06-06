@@ -54,6 +54,8 @@ Flow: `register_player` → `create_room` **or** `join_room` → `start_round` �
 | `claimTile` | `{ tileId }` | player-role + live; tile must be in your room, non-alley, **Manhattan-adjacent** to you; sets `ownerPlayerId`; writes a `claim` event. |
 | `endRound` | `{ roomId }` | host only, live only; writes ranked `round_results`; `state='results'`. |
 | `rematch` | `{ roomId }` | host only, results only; clears tiles/player_state/events/round_results/pickups; `state='lobby'`, `roundNumber++`. |
+| `leaveRoom` | `{ roomId }` | caller must be in the room; removes caller's `player_state` or `spectator_state`; sets `player.roomId = 0`; transfers host to next connected player by join order if host leaves; deletes room if empty. |
+| `closeRoom` | `{ roomId }` | host only; **rejects if `state='live'`**; rehomes all participants (`roomId = 0`), deletes room-scoped rows, deletes room. |
 
 **Calling convention** (matches `DevSync.tsx`): `conn.reducers.registerPlayer({ name, role })`.
 The call returns a `Promise<void>` that **resolves after commit** and **rejects if the
@@ -69,7 +71,7 @@ connection identity (`conn.identity`).
 - `player_state` rows exist **only after `start_round`**, and only for `player`-role; spectators never get one.
 - `round_results` are **appended per round** (carry `roundNumber`); `rematch` deletes the prior round's rows.
 - `rooms.state` is exactly `lobby | live | results`. Timer: derive remaining time client-side from `rooms.endsAtMs`.
-- Scoring: `tileScore` = Σ `incomeValue` of owned tiles; `ownershipBonus` = street +3 / bodega +10; `cashScore` = `pickupCashTotal`; ranked by `totalScore` desc, ties → lower `playerId`.
+- Scoring: `tileScore` = accumulated tile income (`tileIncomeTotal`, lazy fallback to owned-tile snapshot); `ownershipBonus` = street +3 / bodega +10 per owned tile at round end; `cashScore` = `pickupCashTotal` (pickup cash only); `totalScore` = sum of the three. Live `player_state.cash` = tile income + pickup cash during the round.
 
 ---
 

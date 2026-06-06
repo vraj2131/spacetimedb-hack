@@ -52,9 +52,9 @@ export function Scoreboard({ title, variant = 'default', ...props }: ScoreboardP
     : 'font-black text-slate-900';
 
   return (
-    <section className={sectionClass}>
-      <p className={labelClass}>
-        {title ?? (props.mode === 'live' ? 'Live standings' : 'Final standings')}
+    <section className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
+      <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
+        {title ?? (props.mode === 'live' ? 'Live standings (income + pickups)' : 'Final standings')}
       </p>
       <div className={listClass}>
         {props.entries.length === 0 ? (

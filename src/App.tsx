@@ -38,8 +38,8 @@ function App() {
     const prevRoomState = prevRoomStateRef.current;
 
     if (roomId === 0) {
-      prevRoomIdRef.current = roomId;
-      prevRoomStateRef.current = roomState;
+      prevRoomIdRef.current = null;
+      prevRoomStateRef.current = null;
       if (screen !== 'join') {
         setScreen('join');
       }

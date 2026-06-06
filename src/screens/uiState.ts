@@ -69,6 +69,7 @@ export type LobbyViewModel = {
   canStartRound: boolean;
   canLeaveRoom: boolean;
   canCloseRoom: boolean;
+  actionStatusLabel: string;
   capacityLabel: string;
   stateLabel: string;
 };
@@ -98,6 +99,8 @@ export type MatchViewModel = {
   actionStatusLabel: string;
   spectatorEnergy: number;
   localCash: number;
+  localTileIncome: number;
+  localPickupCash: number;
   claimHint: string;
   canLeaveRoom: boolean;
   localPickupId: number | null;
@@ -115,6 +118,7 @@ export type ResultsViewModel = {
   canRematch: boolean;
   canCloseRoom: boolean;
   canLeaveRoom: boolean;
+  actionStatusLabel: string;
   hasResults: boolean;
 };
 
@@ -225,6 +229,7 @@ export function createMockGameUiState(role: PlayerRole = mockRoom.localRole): Ga
       canStartRound,
       canLeaveRoom,
       canCloseRoom: canStartRound,
+      actionStatusLabel: '',
       capacityLabel: `${roster.filter(player => player.role === 'player').length} / 4`,
       stateLabel: canStartRound ? 'Ready' : 'Waiting for host',
     },
@@ -259,6 +264,8 @@ export function createMockGameUiState(role: PlayerRole = mockRoom.localRole): Ga
       actionStatusLabel: '',
       spectatorEnergy: isSpectator ? 10 : 0,
       localCash: 12,
+      localTileIncome: 7,
+      localPickupCash: 5,
       claimHint: 'Pick Claim or Contest, then click an adjacent tile.',
       canLeaveRoom,
       localPickupId: null,
@@ -275,6 +282,7 @@ export function createMockGameUiState(role: PlayerRole = mockRoom.localRole): Ga
       canRematch,
       canCloseRoom: canRematch,
       canLeaveRoom,
+      actionStatusLabel: '',
       hasResults: mockResults.length > 0,
     },
   };
