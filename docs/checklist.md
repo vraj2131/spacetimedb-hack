@@ -2,7 +2,7 @@
 
 Living progress tracker for the project. Check items off as they land (`- [x]`). Leave pending items unchecked (`- [ ]`).
 
-Last updated: June 6, 2026 (Slice 2 cutover: game schema replaces `sync_state`; DevSync uses `rooms`/`players`.)
+Last updated: June 6, 2026 (L3A atlas + M2B Match controls + room lifecycle leave/close merged; browser smoke re-run is the next gate — see `docs/M1_SMOKE_TEST.md`.)
 
 ---
 
@@ -81,17 +81,17 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 
 - [x] Game schema replaces `sync_state` (`rooms`, `players`, `player_state`, `tiles`, …) — _DevSync subscribes to `rooms`/`players`; `sync_state` + `set_value` removed_
 - [x] `register_player`, `create_room`, `join_room`, `start_round` reducers — _implemented + integration-tested on `backend-mvp-reducers`_
-- [x] `spacetimedb/src/map.ts` — 28×20 layout + spawn points — _v1 NYC tile types (street/bodega/alley); pickup spawns still empty_
+- [x] `spacetimedb/src/map.ts` — 28×20 layout + spawn points — _v1 NYC tile types (street/bodega/alley); `PICKUP_SPAWNS` seeded on `start_round`_
 - [x] Join screen (nickname, role, optional room code) — _live reducers via `useLiveGameState`_
 - [x] Lobby screen (code, roster, host start button) — _live roster + host `startRound`_
-- [x] Phaser draws 28×20 grid as colored rectangles — _live `projectRenderState` on Match; primitives until L3 atlas_
+- [x] Phaser draws 28×20 grid on Match — _live `projectRenderState` + Kenney atlas (L3A); primitive fallbacks if atlas load fails_
 - [x] `move_player` works across two tabs — _integration-tested; browser smoke in `docs/M1_SMOKE_TEST.md`_
 
 ### Slice 3 — Claim + results
 
 - [x] `claim_tile` reducer (adjacent only) — _implemented + integration-tested on `backend-mvp-reducers`_
 - [x] Manual `end_round` reducer — _implemented (lazy scoring + ranking); `rematch` also landed_
-- [x] Tile ownership colors in Phaser — _live owner colors from `projectRenderState` (primitive tiles)_
+- [x] Tile ownership colors in Phaser — _live owner tints from `projectRenderState` on Kenney tile sprites_
 - [x] Timer + score HUD — _live `endsAtMs` timer + standings on Match_
 - [x] Results screen — _live `round_results` + host rematch_
 - [x] Two clients agree on winner — _server `end_round` scores; verify in browser smoke_
@@ -104,6 +104,13 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 - [x] Action errors visible on Lobby and Results (not just Match)
 - [x] Auto-route to Join when `player.roomId === 0`
 - [x] Room leave/close automated smoke — _`npm run smoke:leave-close` against local `bodega-blitz`; manual browser steps in `docs/M1_SMOKE_TEST.md` section 9_
+
+### Slice 2c — Live Match controls (M2B)
+
+- [x] Claim / Contest mode toggle on Match — _board click calls the selected action_
+- [x] `onClaimTileAt` / `onContestTileAt` / `onCollectPickupAt` in `useLiveGameState`
+- [x] Collect button enabled when local player stands on an active pickup
+- [x] Spectator tile targeting for spill/shield; coffee boost player targeting on scoreboard
 
 ### Slice 4 — Scoring + auto-end
 

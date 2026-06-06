@@ -23,9 +23,9 @@ the same shape — but regenerate anyway so your local `src/module_bindings/` is
 Current update: full-gameplay backend is now beyond the original MVP handoff.
 `contest_tile`, `collect_pickup`, pickup seeding, `trigger_spectator_event`,
 scheduled `tick_round`, spectator energy regen/cooldowns, server auto-end,
-`reset_demo_room`, and `post_taunt` are implemented and integration-tested.
-The flavor worker has a live polling path and still works with empty LLM keys
-through the static provider.
+`leave_room`, `close_room`, `reset_demo_room`, and `post_taunt` are implemented
+and integration-tested. The flavor worker has a live polling path and still works
+with empty LLM keys through the static provider.
 
 - **Reducers** (`spacetimedb/src/reducers.{room,player}.ts`): `register_player`,
   `create_room`, `join_room`, `claim_tile`, `end_round`, `rematch`, plus live-round

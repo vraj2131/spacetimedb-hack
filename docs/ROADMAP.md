@@ -83,7 +83,7 @@ end → results → rematch.
   spectator regen, and auto-end. Manual `end_round` stays as fallback.
 - **L3 (parallel, non-blocking):** Rendering **Stage A** — Kenney atlas for tiles, tokens, pickups, and fx overlays with primitive fallbacks. _(L3A landed.)_
 - **L4 (parallel, prep):** make `SpectatorBar`/`TauntBubble`/`EventFeed` real components fed by live `events`.
-- **Cut line:** demo with manual `end_round` and Kenney-or-primitive board if needed. Never cut the live adapter + core loop.
+- **Cut line:** demo with manual `end_round` fallback if scheduled auto-end fails; never cut the live adapter + core loop.
 
 ### M2 — Full gameplay
 - **L1:** landed timed `contest_tile`, one-time `collect_pickup`, fixed `PICKUP_SPAWNS`,

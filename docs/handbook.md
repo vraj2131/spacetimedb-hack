@@ -2,7 +2,7 @@
 
 > Companion to the team handbook and the Phase-0 Closeout plan. This says **who does what, in what order, and how it merges** so five people work in parallel without conflicting on the shared skeleton.
 
-> **Status (Wave 1 backend complete):** Wave 0 + the gate are done. Dev A's backend lane has landed on `main` — the room/gameplay reducers (`register_player`, `create_room`, `join_room`, `start_round`, `move_player`, `claim_tile`, `end_round`, `rematch`) are implemented, integration-tested, and published to maincloud; `tables.ts` is blessed. The team is in **Wave 2** (parallel lanes). Client lanes start from **`docs/BACKEND_HANDOFF.md`**.
+> **Status (Wave 2 in progress):** Wave 0 + the gate are done. Backend gameplay, live client wiring (L2A–L2C), Kenney atlas (L3A), M2B Match controls, and room lifecycle are on `main`. See **`docs/ROADMAP.md`** and **`docs/BACKEND_HANDOFF.md`**. Remaining work: browser smoke re-run, L4 UI polish, M3 custom art.
 
 ## The core idea (read first)
 Phase 0 builds the **shared contract files** (`tables.ts`, `index.ts` barrel, `App.tsx` router, `renderState.ts`, Tailwind config). Those are the conflict magnets, so they get **one writer (Dev A)** who lands them fast. The other four do **not** edit those files during Phase 0 — they work in **scratch branches** against *agreed interfaces*, then graft their work in once the skeleton is on `main`.
