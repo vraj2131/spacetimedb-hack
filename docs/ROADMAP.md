@@ -12,12 +12,20 @@ to a **playable, good-looking game**.
   (`src/game/projection.ts`), 2.5D `BoardScene` with camera/pan/zoom, and a 17-frame CC0 Kenney
   iso atlas (`public/assets/game.{png,json}` via `_source/pack_atlas.py`).
 
-## What's missing (why it isn't playable yet)
+## What's landed (M1 live wiring — L2A–L2C merged)
 
-1. **No live `RenderState` adapter** — the board renders, but only from `MOCK_RENDER_STATE`.
-2. **Screens are 100% mock** — `createMockGameUiState()` (`src/screens/uiState.ts`) drives
-   Join/Lobby/Match/Results; nothing calls live reducers or reads live tables.
-3. **The board draws primitives** — colored diamonds + circles; the Kenney atlas isn't loaded.
+1. **Live `RenderState` adapter** — `src/adapters/projectRenderState.ts` projects subscribed rows
+   into the frozen `RenderState` shape; Match passes live state into `GameStage`/`PhaserGame`.
+2. **Live screens + controller** — `useLiveGameState` subscribes via `useTable`, derives
+   `GameUiState`, and calls `conn.reducers.*`; `App.tsx` routes Join → Lobby → Match → Results.
+3. **Dev scaffold mock retained** — `createMockGameUiState()` / `MOCK_RENDER_STATE` remain for
+   Dev sync only; the live game flow does not use them.
+
+## What's still open (M1 demo polish + M2+)
+
+1. **Browser smoke not CI-gated** — run the two-client checklist in `docs/M1_SMOKE_TEST.md`.
+2. **The board draws primitives** — colored diamonds + circles; the Kenney atlas isn't loaded (L3).
+3. **Auto round-end** — manual `end_round` works; `tick_round` / lazy auto-end still pending (L1).
 
 ## Direction
 
@@ -49,17 +57,13 @@ Names are placeholders. L2 carries the demo; L1/L3/L4 run in parallel and integr
 Two tabs play a full round on **live data**: join → lobby → start → move/claim on a live board →
 end → results → rematch.
 
-- **L2 (critical path):**
-  - Create `src/adapters/projectRenderState.ts` — pure map of subscribed rows (`tiles`, `players`,
-    `player_state`, `pickups`) → `RenderState` (sketch below). Unit-test like `tests/scoring.test.mjs`.
-  - Create a live controller (e.g. `src/hooks/useLiveGameState.ts`) replacing
-    `createMockGameUiState()`: subscribe via `useTable`, derive the same `GameUiState` view models
-    (`src/screens/uiState.ts`), expose actions calling `conn.reducers.*`.
-  - Wire screens in `App.tsx`: Join → `registerPlayer`+(`createRoom`|`joinRoom`); Lobby → live
-    roster + host `startRound`, auto-navigate on `room.state`; Match → live board + `movePlayer`/
-    `claimTile`; Results → live `round_results` + host `rematch`.
-  - Resolve `tile:click {x,y}` → `tileId` from the `tiles` row, then call `claimTile`.
-  - Pass `renderState={live}` into `GameStage`/`PhaserGame`; retire `MOCK_RENDER_STATE` on Match.
+- **L2 (critical path) — landed (L2A–L2C):**
+  - ~~`src/adapters/projectRenderState.ts`~~ — done + unit-tested.
+  - ~~`src/hooks/useLiveGameState.ts`~~ — done; subscribes, projects `GameUiState`, exposes reducer actions.
+  - ~~Wire screens in `App.tsx`~~ — Join/Lobby/Match/Results on live data; auto-route on `room.state`.
+  - ~~`tile:click` → `resolveTileIdAt` → `claimTile`~~ — done.
+  - ~~Match passes live `renderState`~~ — done; `MOCK_RENDER_STATE` only in Dev sync.
+  - **Remaining M1 gate:** browser smoke per `docs/M1_SMOKE_TEST.md`.
 - **L1 (parallel):** auto-end when `endsAtMs` passes (lazy check in an action reducer, or scheduled
   `tick_round` if the spike holds — `docs/spike-findings.md`). Manual `end_round` stays as fallback.
 - **L3 (parallel, non-blocking):** Rendering **Stage A** — load the Kenney atlas, swap primitives → sprites.
@@ -144,10 +148,9 @@ function projectRenderState(tiles, players, playerStates, pickups, nowMs): Rende
 }
 ```
 
-**Create:** `src/adapters/projectRenderState.ts`, `src/hooks/useLiveGameState.ts`,
-`tests/projectRenderState.test.mjs`. **Modify:** `src/App.tsx` (swap mock → live controller),
-`src/screens/{Join,Lobby,Match,Results}.tsx` (consume live view models + actions), Match mount
-(`renderState={live}`). Reuse the existing `GameUiState` shape so screen JSX barely changes.
+**Landed:** `src/adapters/projectRenderState.ts`, `src/hooks/useLiveGameState.ts`,
+`tests/projectRenderState.test.mjs`, live `App.tsx` router, live screen wiring, Match
+`renderState={live}`. `GameUiState` shape unchanged so screen JSX stayed stable.
 
 ---
 

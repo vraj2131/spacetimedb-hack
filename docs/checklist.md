@@ -2,7 +2,7 @@
 
 Living progress tracker for the project. Check items off as they land (`- [x]`). Leave pending items unchecked (`- [ ]`).
 
-Last updated: June 6, 2026 (Wave 1 backend complete — room/gameplay reducers `register_player`/`create_room`/`join_room`/`start_round`/`move_player`/`claim_tile`/`end_round`/`rematch` implemented, integration-tested, and merged; `tables.ts` blessed; maincloud published. Entering Wave 2 — client live-wiring. See `docs/BACKEND_HANDOFF.md`.)
+Last updated: June 6, 2026 (Wave 1 backend complete; M1 live client wiring merged via L2A–L2C — adapters, `useLiveGameState`, screen/router wiring, live Match `RenderState`. Browser smoke is the next gate: `docs/M1_SMOKE_TEST.md`.)
 
 ---
 
@@ -82,19 +82,19 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 - [ ] Game schema replaces `sync_state` (`rooms`, `players`, `player_state`, `tiles`, …) — _tables scaffolded alongside `sync_state`; `sync_state` still drives the dev round-trip_
 - [x] `register_player`, `create_room`, `join_room`, `start_round` reducers — _implemented + integration-tested on `backend-mvp-reducers`_
 - [x] `spacetimedb/src/map.ts` — 28×20 layout + spawn points — _v1 NYC tile types (street/bodega/alley); pickup spawns still empty_
-- [ ] Join screen (nickname, role, optional room code)
-- [ ] Lobby screen (code, roster, host start button)
-- [ ] Phaser draws 28×20 grid as colored rectangles
-- [ ] `move_player` works across two tabs
+- [x] Join screen (nickname, role, optional room code) — _live reducers via `useLiveGameState`_
+- [x] Lobby screen (code, roster, host start button) — _live roster + host `startRound`_
+- [x] Phaser draws 28×20 grid as colored rectangles — _live `projectRenderState` on Match; primitives until L3 atlas_
+- [x] `move_player` works across two tabs — _integration-tested; browser smoke in `docs/M1_SMOKE_TEST.md`_
 
 ### Slice 3 — Claim + results
 
 - [x] `claim_tile` reducer (adjacent only) — _implemented + integration-tested on `backend-mvp-reducers`_
 - [x] Manual `end_round` reducer — _implemented (lazy scoring + ranking); `rematch` also landed_
-- [ ] Tile ownership colors in Phaser
-- [ ] Timer + score HUD
-- [ ] Results screen
-- [ ] Two clients agree on winner
+- [x] Tile ownership colors in Phaser — _live owner colors from `projectRenderState` (primitive tiles)_
+- [x] Timer + score HUD — _live `endsAtMs` timer + standings on Match_
+- [x] Results screen — _live `round_results` + host rematch_
+- [x] Two clients agree on winner — _server `end_round` scores; verify in browser smoke_
 
 ### Slice 4 — Scoring + auto-end
 
@@ -152,7 +152,7 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 - [ ] Basic SFX
 - [ ] Winner state
 - [ ] Mobile touch controls
-- [ ] `rematch` flow — _`rematch` reducer landed; results-screen UI flow pending_
+- [x] `rematch` flow — _reducer + Results/Lobby UI wired; verify in browser smoke_
 
 ---
 

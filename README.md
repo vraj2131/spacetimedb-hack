@@ -4,13 +4,13 @@ Live multiplayer NYC block-control game built on SpacetimeDB. Players will fight
 
 ## Current Phase Status
 
-Phase 0 (scaffold) is complete and **Wave 1 backend has landed**: the room/gameplay
-reducer chain is implemented, integration-tested, and merged; the schema is blessed;
-and `bodega-blitz` is published to maincloud. The team is now in **Wave 2** — wiring
-the client (screens, HUD, live Phaser `RenderState`) onto those reducers.
+Phase 0 (scaffold) is complete, **Wave 1 backend has landed**, and **M1 live client wiring
+is merged** (L2A–L2C): Join/Lobby/Match/Results call live reducers, `useLiveGameState`
+drives the screens, and Match passes a live `RenderState` into Phaser. **Browser smoke and
+a manual two-client demo are the next verification gate** — see [docs/M1_SMOKE_TEST.md](docs/M1_SMOKE_TEST.md).
 
-- The temporary `sync_state` round-trip baseline is still present until the client cuts over to live game state.
-- **Start here for backend integration: [docs/BACKEND_HANDOFF.md](docs/BACKEND_HANDOFF.md).**
+- The temporary `sync_state` round-trip baseline remains in Dev sync for scaffold proof.
+- **Backend contract (historical): [docs/BACKEND_HANDOFF.md](docs/BACKEND_HANDOFF.md).**
 
 This repo uses a **local-first dev path**. Maincloud is for smoke tests and deployment, not daily iteration.
 
@@ -156,8 +156,8 @@ Each teammate should post in the team channel:
 - `spacetimedb/` holds the SpacetimeDB module
 - `src/` holds the current Vite React client
 - `src/module_bindings/` is generated and should not be edited by hand
-- `src/game/` renders the isometric 28×20 board (BoardScene + EventBus) from `RenderState`; swapping the mock for live data is in progress (Dev E adapter → Dev B)
-- keep the `sync_state` proof until the client cuts over to live game state
+- `src/game/` renders the isometric 28×20 board (BoardScene + EventBus) from `RenderState`; Match uses live projected state; Dev sync still mounts the mock for scaffold proof
+- keep the `sync_state` proof in Dev sync; the live game flow uses `useLiveGameState`
 
 ## Troubleshooting
 
@@ -169,11 +169,13 @@ See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for the common failure ca
 - browser never connects
 - teammate environment drift
 
-## Next Up (Wave 2)
+## Next Up (M1 hardening → M2)
 
-Backend reducer bodies are done (see [docs/BACKEND_HANDOFF.md](docs/BACKEND_HANDOFF.md)). The client lanes now:
+Backend reducer bodies are done (see [docs/BACKEND_HANDOFF.md](docs/BACKEND_HANDOFF.md)). M1 live client wiring is merged:
 
-1. ~~implement room reducer bodies~~ — **done** (`register_player`, `create_room`, `join_room`, `start_round`, `move_player`, `claim_tile`, `end_round`, `rematch`)
-2. wire Join + Lobby + Match + Results screens to those reducers
-3. project live game state into `RenderState` for Phaser (replace the mock)
-4. `move_player` / `claim_tile` across two tabs on the synced 28×20 board
+1. ~~implement room reducer bodies~~ — **done**
+2. ~~wire Join + Lobby + Match + Results screens to those reducers~~ — **done** (L2C)
+3. ~~project live game state into `RenderState` for Phaser~~ — **done** (L2A/L2C)
+4. **Run the two-client browser smoke** — [docs/M1_SMOKE_TEST.md](docs/M1_SMOKE_TEST.md)
+
+Parallel lanes still open: L3 Kenney atlas sprites, L1 auto round-end, M2 contest/pickups/spectators.
