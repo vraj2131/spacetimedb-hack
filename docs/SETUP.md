@@ -52,4 +52,4 @@ Then open the app and confirm:
 - the page loads
 - the connection status becomes `Connected`
 - the shared value updates across two tabs
-- the Phaser board canvas renders the 12×8 grid beside the sync proof
+- the Phaser board canvas renders the isometric 28×20 board beside the sync proof
