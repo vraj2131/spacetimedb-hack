@@ -1,9 +1,9 @@
-import type { PlayerSummary, ResultRow } from '../screens/mockData';
+import type { LiveStanding, ResultRow } from '../screens/uiState';
 
 type ScoreboardProps =
   | {
       mode: 'live';
-      entries: PlayerSummary[];
+      entries: LiveStanding[];
       title?: string;
     }
   | {
@@ -13,14 +13,20 @@ type ScoreboardProps =
     };
 
 export function Scoreboard({ title, ...props }: ScoreboardProps) {
+  const emptyLabel = props.mode === 'live' ? 'No standings yet' : 'No result rows yet';
+
   return (
     <section className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
       <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
         {title ?? (props.mode === 'live' ? 'Live standings' : 'Final standings')}
       </p>
       <div className="mt-3 grid gap-2">
-        {props.mode === 'live'
-          ? props.entries.map((entry, index) => (
+        {props.entries.length === 0 ? (
+          <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-sm font-semibold text-slate-600">
+            {emptyLabel}
+          </div>
+        ) : props.mode === 'live' ? (
+          props.entries.map((entry, index) => (
               <div
                 key={entry.id}
                 className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
@@ -36,7 +42,8 @@ export function Scoreboard({ title, ...props }: ScoreboardProps) {
                 <span className="font-black text-slate-900">{entry.score}</span>
               </div>
             ))
-          : props.entries.map(entry => (
+        ) : (
+          props.entries.map(entry => (
               <div
                 key={entry.id}
                 className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
@@ -56,7 +63,8 @@ export function Scoreboard({ title, ...props }: ScoreboardProps) {
                   <span>Bonus {entry.bonus}</span>
                 </div>
               </div>
-            ))}
+            ))
+        )}
       </div>
     </section>
   );

@@ -1,4 +1,4 @@
-import type { EventItem, PlayerRole } from '../screens/mockData';
+import type { EventItem, PlayerRole } from '../screens/uiState';
 import { StatusPill } from './StatusPill';
 
 type HudProps = {
@@ -6,7 +6,7 @@ type HudProps = {
   roomCode: string;
   phaseLabel: string;
   role: PlayerRole;
-  taunt: string;
+  taunt: string | null;
   events: EventItem[];
 };
 
@@ -32,20 +32,28 @@ export function Hud({ timerLabel, roomCode, phaseLabel, role, taunt, events }: H
 
       <section className="rounded-md border border-yellow-200 bg-yellow-50 p-3">
         <p className="text-xs font-bold uppercase tracking-wide text-yellow-800">Taunt feed</p>
-        <p className="mt-2 text-sm font-semibold leading-6 text-slate-800">{taunt}</p>
+        <p className="mt-2 text-sm font-semibold leading-6 text-slate-800">
+          {taunt ?? 'Taunts warming up'}
+        </p>
       </section>
 
       <section>
         <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Events</p>
         <div className="mt-2 grid gap-2">
-          {events.map(event => (
+          {events.length === 0 ? (
+            <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-600">
+              No events yet
+            </div>
+          ) : (
+            events.map(event => (
             <div
               key={event.id}
               className={`rounded-md border px-3 py-2 text-sm font-semibold text-slate-800 ${eventToneClass[event.tone]}`}
             >
               {event.label}
             </div>
-          ))}
+            ))
+          )}
         </div>
       </section>
     </aside>

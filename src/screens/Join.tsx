@@ -1,12 +1,18 @@
 import { useState } from 'react';
-import type { ScreenProps } from '../App';
 import { StatusPill } from '../components/StatusPill';
-import { mockRoom, type PlayerRole } from './mockData';
+import type { GameUiActions, JoinViewModel, PlayerRole } from './uiState';
 
-export function JoinScreen({ navigate }: ScreenProps) {
-  const [nickname, setNickname] = useState(mockRoom.localName);
+type JoinScreenProps = {
+  viewModel: JoinViewModel;
+  actions: GameUiActions;
+};
+
+export function JoinScreen({ viewModel, actions }: JoinScreenProps) {
+  const [nickname, setNickname] = useState(viewModel.defaultName);
   const [roomCode, setRoomCode] = useState('');
-  const [role, setRole] = useState<PlayerRole>(mockRoom.localRole);
+  const [role, setRole] = useState<PlayerRole>(viewModel.defaultRole);
+  const canSubmit = nickname.trim().length > 0 && viewModel.connection.isConnected;
+  const connectionTone = viewModel.connection.isConnected ? 'good' : 'danger';
 
   return (
     <main className="min-h-screen bg-[#f6f2e8] px-4 py-8 text-slate-950 md:px-8">
@@ -20,7 +26,7 @@ export function JoinScreen({ navigate }: ScreenProps) {
                 Choose a role, enter a room code if you have one, and move into the lobby shell.
               </p>
             </div>
-            <StatusPill label="mocked" tone="warning" />
+            <StatusPill label={viewModel.connection.label} tone={connectionTone} />
           </div>
 
           <div className="mt-6 grid gap-4">
@@ -63,7 +69,7 @@ export function JoinScreen({ navigate }: ScreenProps) {
               <input
                 value={roomCode}
                 onChange={event => setRoomCode(event.target.value.toUpperCase())}
-                placeholder={mockRoom.code}
+                placeholder={viewModel.suggestedRoomCode}
                 className="rounded-md border border-slate-300 bg-white px-4 py-3 uppercase text-slate-950 outline-none focus:border-teal-700"
               />
             </label>
@@ -72,21 +78,23 @@ export function JoinScreen({ navigate }: ScreenProps) {
           <div className="mt-6 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => navigate('lobby')}
+              onClick={() => actions.onCreateRoom(nickname.trim(), role)}
+              disabled={!canSubmit || viewModel.connection.isSubmitting}
               className="rounded-md bg-teal-700 px-5 py-3 text-sm font-black uppercase tracking-wide text-white"
             >
               Create room
             </button>
             <button
               type="button"
-              onClick={() => navigate('lobby')}
+              onClick={() => actions.onJoinRoom(nickname.trim(), role, roomCode.trim())}
+              disabled={!canSubmit || roomCode.trim().length === 0 || viewModel.connection.isSubmitting}
               className="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-700"
             >
               Join room
             </button>
             <button
               type="button"
-              onClick={() => navigate('dev')}
+              onClick={actions.onReturnToDev}
               className="rounded-md border border-slate-300 bg-slate-50 px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-600"
             >
               Dev sync

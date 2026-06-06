@@ -1,4 +1,4 @@
-export type PlayerRole = 'player' | 'spectator';
+import type { EventItem, PlayerRole, ResultRow } from './uiState';
 
 export type PlayerSummary = {
   id: string;
@@ -10,31 +10,24 @@ export type PlayerSummary = {
   isHost?: boolean;
 };
 
-export type EventItem = {
-  id: string;
-  label: string;
-  tone: 'neutral' | 'good' | 'danger';
-};
-
-export type ResultRow = {
-  id: string;
-  rank: number;
-  name: string;
-  territory: number;
-  pickups: number;
-  bonus: number;
-  total: number;
-};
-
 export const mockRoom = {
+  id: 101,
   code: 'BODEGA',
   name: 'Union Square Scramble',
   phaseLabel: 'Round 1',
   timerLabel: '01:12',
+  roundNumber: 1,
   spectators: 7,
   localName: 'Nithi',
   localRole: 'player' as PlayerRole,
   taunt: "Hold the corner or lose the counter.",
+};
+
+export const mockSpectatorRoom = {
+  ...mockRoom,
+  localName: 'Sidewalk Crew',
+  localRole: 'spectator' as PlayerRole,
+  taunt: 'Pick your moment and swing the crowd energy.',
 };
 
 export const mockPlayers: PlayerSummary[] = [

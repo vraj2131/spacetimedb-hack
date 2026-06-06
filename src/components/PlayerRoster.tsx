@@ -1,8 +1,8 @@
-import type { PlayerSummary } from '../screens/mockData';
+import type { RosterPlayer } from '../screens/uiState';
 import { StatusPill } from './StatusPill';
 
 type PlayerRosterProps = {
-  players: PlayerSummary[];
+  players: RosterPlayer[];
 };
 
 export function PlayerRoster({ players }: PlayerRosterProps) {
@@ -16,7 +16,12 @@ export function PlayerRoster({ players }: PlayerRosterProps) {
         <StatusPill label={`${players.length} active`} tone="good" />
       </div>
       <ul className="mt-4 grid gap-2">
-        {players.map(player => (
+        {players.length === 0 ? (
+          <li className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-sm font-semibold text-slate-600">
+            Waiting for players
+          </li>
+        ) : (
+          players.map(player => (
           <li
             key={player.id}
             className="flex items-start justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
@@ -36,7 +41,8 @@ export function PlayerRoster({ players }: PlayerRosterProps) {
             </div>
             <StatusPill label={player.role} tone={player.role === 'spectator' ? 'warning' : 'neutral'} />
           </li>
-        ))}
+          ))
+        )}
       </ul>
     </section>
   );
