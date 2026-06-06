@@ -10,6 +10,11 @@ import { table, t } from 'spacetimedb/server';
  * Schema source-of-truth: bodega-blitz-cursor-brief.md ("SpacetimeDB schema").
  * Everything is room_id-scoped: one database, all rooms share it, isolation is
  * enforced by `roomId` filtering on every subscription and reducer.
+ *
+ * Blessed by Dev A (Wave 1): all 10 game tables match the brief field-for-field;
+ * `round_tick` stays a documented placeholder until the scheduler spike, and the
+ * dev `sync_state` table is removed at client cutover. Treat as the frozen
+ * contract — coordinate schema changes before editing.
  */
 
 // --- Scaffold round-trip proof (kept until the first gameplay slice) ---------

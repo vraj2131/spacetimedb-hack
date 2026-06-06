@@ -75,7 +75,7 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 - [x] Phaser added as a library dependency
 - [x] Tailwind v4 wired into Vite
 - [x] Empty `PhaserGame` canvas beside React shell
-- [ ] One Maincloud publish succeeds (local publish verified)
+- [x] One Maincloud publish succeeds (local publish verified) — _published `bodega-blitz` to maincloud; schema responsive (read-only smoke)_
 
 ### Slice 2 — Room sync
 
