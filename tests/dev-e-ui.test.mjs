@@ -81,10 +81,13 @@ test('player-facing screens expose leave-close flow and claim guidance', () => {
   assert.match(lobby, /Close room/);
   assert.match(lobby, /Leave room/);
   assert.match(lobby, /actionStatusLabel/);
-  assert.match(match, /Leave room/);
-  assert.match(match, /Claim/);
-  assert.match(match, /Contest/);
-  assert.match(match, /Collect/);
+  assert.match(matchTopBar, /Leave room/);
+  assert.match(matchBottomDock, /Claim/);
+  assert.match(matchBottomDock, /Contest/);
+  assert.match(matchBottomDock, /Collect/);
+  assert.match(match, /MatchTopBar/);
+  assert.match(match, /MatchBottomDock/);
+  assert.match(matchBottomDock, /actionStatusLabel/);
   assert.match(results, /Close room/);
   assert.match(results, /Leave room/);
   assert.match(results, /actionStatusLabel/);

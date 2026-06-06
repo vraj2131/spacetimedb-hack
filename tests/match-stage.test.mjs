@@ -49,7 +49,7 @@ test('Match screen uses outside-chrome layout with fullscreen GameStage', () => 
   assert.match(bottomDock, /Collect/);
 
   const topBar = read('src/components/MatchTopBar.tsx');
-  assert.match(topBar, /Leave/);
+  assert.match(topBar, /Leave room/);
   assert.match(topBar, /Lobby/);
 });
 

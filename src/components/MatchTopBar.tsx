@@ -42,7 +42,7 @@ export function MatchTopBar({ viewModel, actions }: MatchTopBarProps) {
             onClick={() => actions.onLeaveRoom(viewModel.roomId)}
             className={navButtonClass}
           >
-            Leave
+            Leave room
           </button>
         ) : null}
       </div>

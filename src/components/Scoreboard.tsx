@@ -51,10 +51,12 @@ export function Scoreboard({ title, variant = 'default', ...props }: ScoreboardP
     ? 'text-xs font-black text-yellow-200'
     : 'font-black text-slate-900';
 
+  const defaultLiveTitle = isCompact ? 'Live standings' : 'Live standings (income + pickups)';
+
   return (
-    <section className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
-      <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
-        {title ?? (props.mode === 'live' ? 'Live standings (income + pickups)' : 'Final standings')}
+    <section className={sectionClass}>
+      <p className={labelClass}>
+        {title ?? (props.mode === 'live' ? defaultLiveTitle : 'Final standings')}
       </p>
       <div className={listClass}>
         {props.entries.length === 0 ? (
