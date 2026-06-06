@@ -66,6 +66,23 @@ test('checklist marks M1 live UI items complete and leaves atlas sprites open', 
   assert.match(checklist, /M1_SMOKE_TEST\.md/);
 });
 
+test('M1 smoke doc records verified pass criteria', () => {
+  const smoke = read('docs/M1_SMOKE_TEST.md');
+
+  assert.match(smoke, /Recorded smoke run/);
+  for (const criterion of [
+    'Both clients connect with separate identities',
+    'Host creates room; guest joins by code',
+    'Host starts round; both route to Match',
+    'Move buttons call live movement on both clients',
+    'Board click claims adjacent tile and updates both clients',
+    'Host ends round; both route to Results with server score rows',
+    'Host rematches; both return to Lobby',
+  ]) {
+    assert.match(smoke, new RegExp(`- \\[x\\] ${criterion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+  }
+});
+
 test('ROADMAP reflects L2A-L2C landed and primitive board status', () => {
   const roadmap = read('docs/ROADMAP.md');
 

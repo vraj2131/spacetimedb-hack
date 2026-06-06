@@ -58,7 +58,8 @@ Use separate auth token slots so host and guest do not share identity:
 - **Host:** `http://127.0.0.1:5173/?client=host`
 - **Guest:** `http://127.0.0.1:5173/?client=guest`
 
-(Replace `5173` with your Vite port.)
+(Replace `5173` with your Vite port. If browser automation blocks `127.0.0.1`, use
+`http://localhost:5173/?client=host` and `?client=guest` instead — same server.)
 
 Hard-reload both tabs (`Cmd+Shift+R`) if you recently reset the database.
 
@@ -111,12 +112,37 @@ See also [docs/TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 ## 7. Pass criteria (M1)
 
-- [ ] Both clients connect with separate identities
-- [ ] Host creates room; guest joins by code
-- [ ] Host starts round; both route to Match
-- [ ] Move buttons call live movement on both clients
-- [ ] Board click claims adjacent tile and updates both clients
-- [ ] Host ends round; both route to Results with server score rows
-- [ ] Host rematches; both return to Lobby
+- [x] Both clients connect with separate identities
+- [x] Host creates room; guest joins by code
+- [x] Host starts round; both route to Match
+- [x] Move buttons call live movement on both clients
+- [x] Board click claims adjacent tile and updates both clients
+- [x] Host ends round; both route to Results with server score rows
+- [x] Host rematches; both return to Lobby
 
 When all boxes pass, M1 live wiring is verified for demo.
+
+---
+
+## 8. Recorded smoke run (2026-06-06)
+
+Automated two-client smoke via **Playwright MCP** on branch `feature/m1-live-hardening`
+after L2C merge. Local SpacetimeDB was already running (`pid 1284`); Vite on
+`http://localhost:5173` (`npm run dev -- --host 127.0.0.1`).
+
+| Step | Result | Evidence |
+|------|--------|----------|
+| Host/guest connect | Pass | Separate identities (`c2002bbc…` host); both showed **Connected** on Join |
+| Create + join | Pass | Room `OR5Q9B`; guest roster `2 / 10` with SmokeHost + SmokeGuest |
+| Start round | Pass | Both auto-routed to **Match**, Round 3 timer live |
+| Move (both) | Pass | Up/Down/Left/Right buttons; no persistent action errors |
+| Claim (both) | Pass | Host claimed center tiles (score 9 live → 39 final); guest claimed `(11,10)` (score 3 live → 13 final); event feed + standings synced on **both** tabs |
+| End round | Pass | Both routed to **Results**; server rows: Host 39 (Tiles 9, Bonus 30), Guest 13 (Tiles 3, Bonus 10) |
+| Rematch | Pass | Both returned to **Lobby** (host Ready, guest Waiting for host) |
+
+**Automation notes:** Match HUD overlays intercept naive canvas clicks — use the board
+center (move players toward the map middle first) or Playwright `force: true` on the
+canvas. Tile claims require an adjacent cell; the UI correctly surfaces `Claim an
+adjacent tile.` when the click misses.
+
+**M1 status:** Live wiring smoke-verified for demo (2026-06-06).
