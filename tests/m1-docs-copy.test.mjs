@@ -33,6 +33,8 @@ test('README reflects merged M1 live wiring instead of pending client work', () 
 
   assert.match(readme, /M1 live client wiring/i);
   assert.match(readme, /M1_SMOKE_TEST\.md/);
+  assert.match(readme, /Maincloud-default app target/i);
+  assert.match(readme, /VITE_SPACETIMEDB_HOST=https:\/\/maincloud\.spacetimedb\.com/);
   assert.doesNotMatch(
     readme,
     /wiring\s+the client \(screens, HUD, live Phaser `RenderState`\) onto those reducers/i,

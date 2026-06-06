@@ -67,6 +67,8 @@ export type LobbyViewModel = {
   roster: RosterPlayer[];
   isHost: boolean;
   canStartRound: boolean;
+  canLeaveRoom: boolean;
+  canCloseRoom: boolean;
   capacityLabel: string;
   stateLabel: string;
 };
@@ -95,6 +97,9 @@ export type MatchViewModel = {
   isHost: boolean;
   actionStatusLabel: string;
   spectatorEnergy: number;
+  localCash: number;
+  claimHint: string;
+  canLeaveRoom: boolean;
   localPlayerEffects: { speedBoost: boolean; stunned: boolean };
 };
 
@@ -106,6 +111,8 @@ export type ResultsViewModel = {
   recapLine: string;
   results: ResultRow[];
   canRematch: boolean;
+  canCloseRoom: boolean;
+  canLeaveRoom: boolean;
   hasResults: boolean;
 };
 
@@ -136,6 +143,8 @@ export type GameUiActions = {
   onStartRound: (roomId: number) => void;
   onEndRound: (roomId: number) => void;
   onRematch: (roomId: number) => void;
+  onLeaveRoom: (roomId: number) => void;
+  onCloseRoom: (roomId: number) => void;
   onBackToLobby: () => void;
   onReturnToMatch: () => void;
   onReturnToDev: () => void;
@@ -178,6 +187,7 @@ export function createMockGameUiState(role: PlayerRole = mockRoom.localRole): Ga
   const recentTaunt = sourceRoom.taunt;
   const canStartRound = !isSpectator;
   const canRematch = !isSpectator;
+  const canLeaveRoom = sourceRoom.id > 0;
 
   return {
     localIdentity: 'mock-local-identity',
@@ -209,6 +219,8 @@ export function createMockGameUiState(role: PlayerRole = mockRoom.localRole): Ga
       roster,
       isHost: canStartRound,
       canStartRound,
+      canLeaveRoom,
+      canCloseRoom: canStartRound,
       capacityLabel: `${roster.filter(player => player.role === 'player').length} / 4`,
       stateLabel: canStartRound ? 'Ready' : 'Waiting for host',
     },
@@ -242,6 +254,9 @@ export function createMockGameUiState(role: PlayerRole = mockRoom.localRole): Ga
       isHost: canStartRound,
       actionStatusLabel: '',
       spectatorEnergy: isSpectator ? 10 : 0,
+      localCash: 12,
+      claimHint: 'Click an adjacent tile to claim it or contest an enemy tile.',
+      canLeaveRoom,
       localPlayerEffects: { speedBoost: false, stunned: false },
     },
     resultsView: {
@@ -252,6 +267,8 @@ export function createMockGameUiState(role: PlayerRole = mockRoom.localRole): Ga
       recapLine: 'Final scoring will come from round_results once backend scoring lands.',
       results: mockResults,
       canRematch,
+      canCloseRoom: canRematch,
+      canLeaveRoom,
       hasResults: mockResults.length > 0,
     },
   };

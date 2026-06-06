@@ -203,3 +203,41 @@ test('projectGameUiState gates host actions by room state', () => {
   assert.equal(resultsState.resultsView.canRematch, true);
   assert.equal(resultsState.match.controls.find(control => control.id === 'move')?.enabled, false);
 });
+
+test('projectGameUiState exposes leave and close affordances plus live cash', () => {
+  const lobbyState = projectGameUiState(
+    baseInput({
+      room: baseRoom({ state: 'lobby' }),
+      playerStates: [
+        {
+          playerId: 1,
+          roomId: ROOM_ID,
+          speedUntilMs: NOW_MS + 10_000,
+          disabledUntilMs: 0,
+          cash: 12,
+        },
+      ],
+    }),
+  );
+  const resultsState = projectGameUiState(
+    baseInput({
+      room: baseRoom({ state: 'results' }),
+      playerStates: [
+        {
+          playerId: 1,
+          roomId: ROOM_ID,
+          speedUntilMs: NOW_MS + 10_000,
+          disabledUntilMs: 0,
+          cash: 12,
+        },
+      ],
+    }),
+  );
+
+  assert.equal(lobbyState.lobby.canCloseRoom, true);
+  assert.equal(lobbyState.lobby.canLeaveRoom, true);
+  assert.equal(lobbyState.match.claimHint, 'Click an adjacent tile to claim it or contest an enemy tile.');
+  assert.equal(lobbyState.match.localCash, 12);
+  assert.equal(resultsState.resultsView.canCloseRoom, true);
+  assert.equal(resultsState.resultsView.canLeaveRoom, true);
+});

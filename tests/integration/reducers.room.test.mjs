@@ -231,3 +231,115 @@ test('join_room rejects a player past the 10-seat cap', { skip }, async () => {
   await spectator.conn.reducers.joinRoom({ roomCode: room.code });
   assert.equal(playerOf(spectator.conn, spectator.identity).roomId, room.id);
 });
+
+test('leave_room removes a spectator from the room', { skip }, async () => {
+  if (skip) return;
+  const host = await newPlayer();
+  await host.conn.reducers.registerPlayer({ name: 'Host', role: 'player' });
+  await host.conn.reducers.createRoom();
+  const room = [...host.conn.db.rooms.iter()].find(
+    (r) => hex(r.hostIdentity) === hex(host.identity)
+  );
+
+  const spectator = await newPlayer();
+  await spectator.conn.reducers.registerPlayer({ name: 'Watcher', role: 'spectator' });
+  await spectator.conn.reducers.joinRoom({ roomCode: room.code });
+
+  const spectatorRow = playerOf(spectator.conn, spectator.identity);
+  assert.ok(spectator.conn.db.spectator_state.playerId.find(spectatorRow.id));
+
+  await spectator.conn.reducers.leaveRoom({ roomId: room.id });
+
+  assert.equal(playerOf(spectator.conn, spectator.identity).roomId, 0);
+  assert.equal(spectator.conn.db.spectator_state.playerId.find(spectatorRow.id), null);
+});
+
+test('leave_room transfers host to the next participant when host exits', { skip }, async () => {
+  if (skip) return;
+  const host = await newPlayer();
+  await host.conn.reducers.registerPlayer({ name: 'Host', role: 'player' });
+  await host.conn.reducers.createRoom();
+  const room = [...host.conn.db.rooms.iter()].find(
+    (r) => hex(r.hostIdentity) === hex(host.identity)
+  );
+
+  const guest = await newPlayer();
+  await guest.conn.reducers.registerPlayer({ name: 'Guest', role: 'player' });
+  await guest.conn.reducers.joinRoom({ roomCode: room.code });
+
+  await host.conn.reducers.leaveRoom({ roomId: room.id });
+
+  await waitFor(
+    () => playerOf(host.conn, host.identity)?.roomId === 0,
+    'host left room'
+  );
+  const transferred = await waitFor(
+    () => [...guest.conn.db.rooms.iter()].find((r) => r.id === room.id && hex(r.hostIdentity) === hex(guest.identity)),
+    'guest became host'
+  );
+  assert.ok(transferred);
+});
+
+test('leave_room deletes the room when the last participant exits', { skip }, async () => {
+  if (skip) return;
+  const host = await newPlayer();
+  await host.conn.reducers.registerPlayer({ name: 'Solo', role: 'player' });
+  await host.conn.reducers.createRoom();
+  const room = [...host.conn.db.rooms.iter()].find(
+    (r) => hex(r.hostIdentity) === hex(host.identity)
+  );
+
+  await host.conn.reducers.leaveRoom({ roomId: room.id });
+
+  assert.equal(playerOf(host.conn, host.identity).roomId, 0);
+  assert.equal([...host.conn.db.rooms.iter()].find((r) => r.id === room.id), undefined);
+});
+
+test('close_room is host-only and deletes room-scoped data from results', { skip }, async () => {
+  if (skip) return;
+  const host = await newPlayer();
+  await host.conn.reducers.registerPlayer({ name: 'Host', role: 'player' });
+  await host.conn.reducers.createRoom();
+  const room = [...host.conn.db.rooms.iter()].find(
+    (r) => hex(r.hostIdentity) === hex(host.identity)
+  );
+
+  const guest = await newPlayer();
+  await guest.conn.reducers.registerPlayer({ name: 'Guest', role: 'player' });
+  await guest.conn.reducers.joinRoom({ roomCode: room.code });
+
+  await host.conn.reducers.startRound({ roomId: room.id });
+  await host.conn.reducers.endRound({ roomId: room.id });
+
+  await assert.rejects(guest.conn.reducers.closeRoom({ roomId: room.id }));
+
+  await host.conn.reducers.closeRoom({ roomId: room.id });
+
+  await waitFor(
+    () => playerOf(host.conn, host.identity)?.roomId === 0,
+    'host sees own room reset'
+  );
+  await waitFor(
+    () => playerOf(guest.conn, guest.identity)?.roomId === 0,
+    'guest sees own room reset'
+  );
+  await waitFor(
+    () => [...host.conn.db.rooms.iter()].find((r) => r.id === room.id) === undefined,
+    'host sees room deleted'
+  );
+  assert.equal([...host.conn.db.round_results.iter()].find((r) => r.roomId === room.id), undefined);
+  assert.equal([...host.conn.db.tiles.iter()].find((t) => t.roomId === room.id), undefined);
+});
+
+test('close_room rejects a live room', { skip }, async () => {
+  if (skip) return;
+  const host = await newPlayer();
+  await host.conn.reducers.registerPlayer({ name: 'Host', role: 'player' });
+  await host.conn.reducers.createRoom();
+  const room = [...host.conn.db.rooms.iter()].find(
+    (r) => hex(r.hostIdentity) === hex(host.identity)
+  );
+  await host.conn.reducers.startRound({ roomId: room.id });
+
+  await assert.rejects(host.conn.reducers.closeRoom({ roomId: room.id }));
+});

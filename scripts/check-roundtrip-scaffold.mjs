@@ -185,7 +185,7 @@ const checks = [
   ['PhaserGame mounts + tears down a live Phaser.Game', files.phaserGame.includes('new Phaser.Game') && files.phaserGame.includes('game.destroy(true)')],
 
   // --- client: connection defaults ---------------------------------------
-  ['client defaults to local SpacetimeDB', files.main.includes("'ws://127.0.0.1:3000'")],
+  ['client defaults to Maincloud SpacetimeDB', files.main.includes("'https://maincloud.spacetimedb.com'")],
 
   // --- styling: Tailwind v4 ----------------------------------------------
   ['Vite registers the Tailwind v4 plugin', files.viteConfig.includes('tailwindcss()')],
@@ -193,10 +193,10 @@ const checks = [
   ['package installs Tailwind v4', files.packageJson.includes('@tailwindcss/vite')],
 
   // --- config / docs -----------------------------------------------------
-  ['env example points Vite at local host', files.envExample.includes('VITE_SPACETIMEDB_HOST=ws://127.0.0.1:3000')],
+  ['env example points Vite at Maincloud host', files.envExample.includes('VITE_SPACETIMEDB_HOST=https://maincloud.spacetimedb.com')],
   ['env example defines database name', files.envExample.includes('VITE_SPACETIMEDB_DB_NAME=bodega-blitz')],
   ['package installs Phaser', files.packageJson.includes('"phaser"')],
-  ['README explains local-first scaffold phase', files.readme.includes('local-first dev path')],
+  ['README explains Maincloud-default app targeting', files.readme.includes('Maincloud-default app target')],
 ];
 
 const failures = checks.filter(([, passed]) => !passed);

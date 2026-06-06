@@ -51,6 +51,8 @@ const FRIENDLY_REDUCER_ERRORS: ReadonlyArray<readonly [string, string]> = [
   ['move_player: stunned', "You're stunned! Wait it out."],
   ['round is not live', 'Round is not live yet.'],
   ['only the host', 'Only the host can do that.'],
+  ['leave_room: caller is not in that room', "You're not in that room anymore."],
+  ['close_room: room is live', 'Finish or leave the live round before closing the room.'],
 ];
 
 function reducerErrorMessage(error: unknown): string {
@@ -263,6 +265,24 @@ export function useLiveGameState(): LiveGameState {
     [conn, runAction],
   );
 
+  const onLeaveRoom = useCallback(
+    (targetRoomId: number) => {
+      void runAction(async () => {
+        await conn!.reducers.leaveRoom({ roomId: targetRoomId });
+      });
+    },
+    [conn, runAction],
+  );
+
+  const onCloseRoom = useCallback(
+    (targetRoomId: number) => {
+      void runAction(async () => {
+        await conn!.reducers.closeRoom({ roomId: targetRoomId });
+      });
+    },
+    [conn, runAction],
+  );
+
   const onMove = useCallback(
     (direction: MoveDirection) => {
       void runAction(async () => {
@@ -345,6 +365,8 @@ export function useLiveGameState(): LiveGameState {
       onStartRound,
       onEndRound,
       onRematch,
+      onLeaveRoom,
+      onCloseRoom,
       onBackToLobby: () => {},
       onReturnToMatch: () => {},
       onReturnToDev: () => {},
@@ -362,7 +384,9 @@ export function useLiveGameState(): LiveGameState {
       onCreateRoom,
       onEndRound,
       onJoinRoom,
+      onLeaveRoom,
       onMove,
+      onCloseRoom,
       onRematch,
       onSpectatorEvent,
       onSpectatorTileClick,

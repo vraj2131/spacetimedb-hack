@@ -35,8 +35,14 @@ test('Dev E adapter exposes backend handoff view models and actions', () => {
     'recentTaunt',
     'canStartRound',
     'canRematch',
+    'canCloseRoom',
+    'canLeaveRoom',
+    'localCash',
+    'claimHint',
     'onMove',
     'onClaimTileAt',
+    'onLeaveRoom',
+    'onCloseRoom',
     'actionStatusLabel',
   ]) {
     assert.match(uiState, new RegExp(`\\b${expectedField}\\b`));
@@ -59,6 +65,18 @@ test('Dev E screens consume view models and action callbacks instead of mockData
     assert.doesNotMatch(contents, /from '\.\/mockData'/, `${screen} should not import mockData`);
     assert.match(contents, /viewModel/, `${screen} should receive a viewModel prop`);
   }
+});
+
+test('player-facing screens expose leave-close flow and claim guidance', () => {
+  const lobby = read('src/screens/Lobby.tsx');
+  const match = read('src/screens/Match.tsx');
+  const results = read('src/screens/Results.tsx');
+
+  assert.match(lobby, /Close room|Leave room/);
+  assert.match(match, /Leave room/);
+  assert.match(match, /adjacent tile/i);
+  assert.match(results, /Close room|Leave room/);
+  assert.doesNotMatch(results, /Back to lobby/);
 });
 
 test('Dev E components have empty-state labels for backend-not-ready data', () => {

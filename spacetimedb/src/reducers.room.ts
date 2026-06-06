@@ -27,6 +27,43 @@ const ROUND_DURATION_MS = 90_000n;
 const CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const CODE_LENGTH = 6;
 
+function byJoinOrder(left: { joinedAtMs: bigint | number; id: number }, right: { joinedAtMs: bigint | number; id: number }) {
+  if (left.joinedAtMs === right.joinedAtMs) {
+    return left.id - right.id;
+  }
+  return left.joinedAtMs < right.joinedAtMs ? -1 : 1;
+}
+
+function deleteRoomScopedRows(ctx: any, roomId: number): void {
+  ctx.db.tiles.roomId.delete(roomId);
+  ctx.db.player_state.roomId.delete(roomId);
+  ctx.db.spectator_state.roomId.delete(roomId);
+  ctx.db.events.roomId.delete(roomId);
+  ctx.db.round_results.roomId.delete(roomId);
+  ctx.db.pickups.roomId.delete(roomId);
+  ctx.db.taunts.roomId.delete(roomId);
+  ctx.db.round_tick.roomId.delete(roomId);
+}
+
+function rehomeRoomPlayers(ctx: any, roomId: number): void {
+  for (const player of ctx.db.players.roomId.filter(roomId)) {
+    ctx.db.players.id.update({
+      ...player,
+      roomId: 0,
+    });
+  }
+}
+
+function nextHost(roomPlayers: any[]): any | undefined {
+  return [...roomPlayers]
+    .sort((left, right) => {
+      if (left.connected !== right.connected) {
+        return left.connected ? -1 : 1;
+      }
+      return byJoinOrder(left, right);
+    })[0];
+}
+
 // create_room() -> room in lobby; generate short code; set host identity.
 export const createRoom = spacetimedb.reducer({ name: 'create_room' }, ctx => {
   const caller = [...ctx.db.players.identity.filter(ctx.sender)][0];
@@ -305,6 +342,86 @@ export const rematch = spacetimedb.reducer(
       startsAtMs: 0n,
       endsAtMs: 0n,
     });
+  }
+);
+
+// leave_room(room_id) -> remove caller from room; transfer host or delete empty room.
+export const leaveRoom = spacetimedb.reducer(
+  { name: 'leave_room' },
+  { roomId: t.u32() },
+  (ctx, { roomId }) => {
+    const room = ctx.db.rooms.id.find(roomId);
+    if (!room) {
+      throw new SenderError('leave_room: room not found');
+    }
+
+    const caller = [...ctx.db.players.identity.filter(ctx.sender)][0];
+    if (!caller) {
+      throw new SenderError('leave_room: caller is not a registered player');
+    }
+    if (caller.roomId !== roomId) {
+      throw new SenderError('leave_room: caller is not in that room');
+    }
+
+    if (caller.role === 'player') {
+      const state = ctx.db.player_state.playerId.find(caller.id);
+      if (state) {
+        ctx.db.player_state.playerId.delete(caller.id);
+      }
+    } else {
+      const spectator = ctx.db.spectator_state.playerId.find(caller.id);
+      if (spectator) {
+        ctx.db.spectator_state.playerId.delete(caller.id);
+      }
+    }
+
+    ctx.db.players.id.update({
+      ...caller,
+      roomId: 0,
+    });
+
+    const remaining = [...ctx.db.players.roomId.filter(roomId)];
+    if (remaining.length === 0) {
+      deleteRoomScopedRows(ctx, roomId);
+      ctx.db.rooms.id.delete(roomId);
+      return;
+    }
+
+    if (room.hostIdentity.toHexString() !== ctx.sender.toHexString()) {
+      return;
+    }
+
+    const promoted = nextHost(remaining);
+    if (!promoted) {
+      return;
+    }
+
+    ctx.db.rooms.id.update({
+      ...room,
+      hostIdentity: promoted.identity,
+    });
+  }
+);
+
+// close_room(room_id) -> host only; delete room + scoped rows; release all participants.
+export const closeRoom = spacetimedb.reducer(
+  { name: 'close_room' },
+  { roomId: t.u32() },
+  (ctx, { roomId }) => {
+    const room = ctx.db.rooms.id.find(roomId);
+    if (!room) {
+      throw new SenderError('close_room: room not found');
+    }
+    if (room.hostIdentity.toHexString() !== ctx.sender.toHexString()) {
+      throw new SenderError('close_room: only the host can close the room');
+    }
+    if (room.state === 'live') {
+      throw new SenderError('close_room: room is live');
+    }
+
+    rehomeRoomPlayers(ctx, roomId);
+    deleteRoomScopedRows(ctx, roomId);
+    ctx.db.rooms.id.delete(roomId);
   }
 );
 
