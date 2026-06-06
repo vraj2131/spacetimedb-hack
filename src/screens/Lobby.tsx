@@ -19,7 +19,7 @@ export function LobbyScreen({ viewModel, actions }: LobbyScreenProps) {
                 <h1 className="mt-2 text-4xl font-black">{viewModel.roomName}</h1>
                 <p className="mt-3 max-w-2xl leading-7 text-slate-700">
                   Room code <span className="font-black text-slate-950">{viewModel.roomCode}</span> is
-                  ready for live wiring once room reducers land.
+                  live. Share it with players or spectators.
                 </p>
               </div>
               <StatusPill label={`${viewModel.spectatorCount} spectators`} tone="warning" />
@@ -75,16 +75,16 @@ export function LobbyScreen({ viewModel, actions }: LobbyScreenProps) {
         </div>
 
         <aside className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wide text-teal-700">Next wiring</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-teal-700">Live room</p>
           <ul className="mt-4 grid gap-3 text-sm leading-6 text-slate-700">
             <li className="rounded-md border border-slate-200 bg-slate-50 p-3">
-              Connect roster to players filtered by room.
+              Share the room code so guests can join from the Join screen.
             </li>
             <li className="rounded-md border border-slate-200 bg-slate-50 p-3">
-              Gate start button by host identity.
+              Host starts the round when the roster is ready. Everyone routes to Match automatically.
             </li>
             <li className="rounded-md border border-slate-200 bg-slate-50 p-3">
-              Navigate to match when room state becomes live.
+              During a live round, use Return to match if you stepped back to the lobby view.
             </li>
           </ul>
         </aside>
