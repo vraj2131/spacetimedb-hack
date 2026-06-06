@@ -2,7 +2,7 @@
 
 Living progress tracker for the project. Check items off as they land (`- [x]`). Leave pending items unchecked (`- [ ]`).
 
-Last updated: June 6, 2026 (Wave 0 — Dev A spine: schema split, render contract, router, Tailwind)
+Last updated: June 6, 2026 (Wave 0 — Dev A spine merged; Dev C spikes verified)
 
 ---
 
@@ -52,6 +52,7 @@ Goal: every teammate can clone, connect locally, and prove shared state sync bef
 - [x] `docs/TROUBLESHOOTING.md` — common failures
 - [x] `bodega-blitz-cursor-brief.md` — full game spec
 - [x] `docs/checklist.md` — this file
+- [x] `docs/spike-findings.md` — Dev C filtered `useTable` + scheduled `round_tick` findings
 - [ ] `ARCHITECTURE.md`
 - [ ] `DEMO.md`
 - [ ] `ASSETS.md`
@@ -97,7 +98,7 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 
 ### Slice 4 — Scoring + auto-end
 
-- [ ] Scheduled-table / `tick_round` spike (or lazy fallback confirmed)
+- [x] Scheduled-table / `tick_round` spike verified — _integration into live module pending Slice 4 (see `docs/spike-findings.md`); lazy fallback still valid if needed_
 - [ ] Tile income per tick (street 1, bodega 3)
 - [ ] Ownership bonus at round end
 - [ ] Auto round expiration (~90s)
@@ -171,7 +172,8 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 
 ## Open spikes (verify before depending on them)
 
-- [ ] SpacetimeDB 2.0 scheduled-table / `tick_round` exact syntax
+- [x] Filtered `useTable` / room-scoped subscription syntax (`roomId.eq(…)`, `.and(…)`)
+- [x] SpacetimeDB 2.0 scheduled-table / `tick_round` exact syntax (`t.scheduleAt()`, `{ arg: rowType }`)
 - [ ] Groq + Gemini model string smoke tests
 - [ ] Phaser 4 loader / atlas API names
-- [ ] Tailwind v4 + template Vite version compatibility
+- [x] Tailwind v4 + template Vite version compatibility

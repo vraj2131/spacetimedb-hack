@@ -38,3 +38,11 @@ test('.env.example keeps the local-first host contract', () => {
   assert.match(env, /VITE_SPACETIMEDB_HOST=ws:\/\/127\.0\.0\.1:3000/);
   assert.match(env, /VITE_SPACETIMEDB_DB_NAME=bodega-blitz/);
 });
+
+test('docs/spike-findings.md documents Dev C spike handoff', () => {
+  const findings = readFileSync('docs/spike-findings.md', 'utf8');
+  assert.match(findings, /useTable/);
+  assert.match(findings, /roomId\.eq/);
+  assert.match(findings, /t\.scheduleAt\(\)/);
+  assert.match(findings, /reducers\.tick\.ts/);
+});
