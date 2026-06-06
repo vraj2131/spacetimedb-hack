@@ -107,6 +107,15 @@ export const joinRoom = spacetimedb.reducer(
       roomId: room.id,
       joinedAtMs: timestampMs(ctx),
     });
+
+    if (caller.role === 'spectator') {
+      ctx.db.spectator_state.insert({
+        playerId: caller.id,
+        roomId: room.id,
+        energy: 10,
+        lastActionAtMs: 0n,
+      });
+    }
   }
 );
 
@@ -162,6 +171,12 @@ export const startRound = spacetimedb.reducer(
       );
 
     ctx.db.player_state.roomId.delete(roomId);
+
+    const spectators = [...ctx.db.spectator_state.roomId.filter(roomId)];
+    for (const spec of spectators) {
+      ctx.db.spectator_state.playerId.update({ ...spec, energy: 10, lastActionAtMs: 0n });
+    }
+
     seated.forEach((player, seatIndex) => {
       if (seatIndex >= MAX_SPAWN_SEATS) {
         return;
@@ -320,6 +335,12 @@ export const rematch = spacetimedb.reducer(
     ctx.db.events.roomId.delete(roomId);
     ctx.db.round_results.roomId.delete(roomId);
     ctx.db.pickups.roomId.delete(roomId);
+
+    ctx.db.taunts.roomId.delete(roomId);
+    const spectators = [...ctx.db.spectator_state.roomId.filter(roomId)];
+    for (const spec of spectators) {
+      ctx.db.spectator_state.playerId.update({ ...spec, energy: 10, lastActionAtMs: 0n });
+    }
 
     ctx.db.rooms.id.update({
       ...room,

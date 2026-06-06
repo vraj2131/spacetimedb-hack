@@ -87,6 +87,7 @@ const SUBSCRIBE_QUERIES = [
   'SELECT * FROM players',
   'SELECT * FROM rooms',
   'SELECT * FROM player_state',
+  'SELECT * FROM spectator_state',
   'SELECT * FROM tiles',
   'SELECT * FROM events',
   'SELECT * FROM pickups',
