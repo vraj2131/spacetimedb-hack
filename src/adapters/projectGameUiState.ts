@@ -59,6 +59,19 @@ export type LiveRoundResultRow = {
   readonly rank: number;
 };
 
+export type LiveSpectatorStateRow = {
+  readonly playerId: number;
+  readonly roomId: number;
+  readonly energy: number;
+};
+
+export type LivePlayerStateRow = {
+  readonly playerId: number;
+  readonly roomId: number;
+  readonly speedUntilMs: number | bigint;
+  readonly disabledUntilMs: number | bigint;
+};
+
 export type ProjectGameUiStateInput = {
   readonly roomId: number;
   readonly room: LiveRoomRow | null;
@@ -67,6 +80,8 @@ export type ProjectGameUiStateInput = {
   readonly events: readonly LiveEventRow[];
   readonly taunts: readonly LiveTauntRow[];
   readonly roundResults: readonly LiveRoundResultRow[];
+  readonly spectatorStates: readonly LiveSpectatorStateRow[];
+  readonly playerStates: readonly LivePlayerStateRow[];
   readonly localIdentity: { toHexString(): string } | null;
   readonly nowMs: number;
   readonly connection: Pick<ConnectionState, 'isConnected' | 'isSubmitting'> & {
@@ -218,6 +233,8 @@ export function projectGameUiState({
   events,
   taunts,
   roundResults,
+  spectatorStates,
+  playerStates,
   localIdentity,
   nowMs,
   connection,
@@ -229,6 +246,12 @@ export function projectGameUiState({
     localIdentityHex == null
       ? undefined
       : roomPlayers.find(player => player.identity.toHexString() === localIdentityHex);
+  const localPlayerState = localPlayer
+    ? playerStates.find(s => s.playerId === localPlayer.id && s.roomId === roomId)
+    : undefined;
+  const localSpectatorState = localPlayer
+    ? spectatorStates.find(s => s.playerId === localPlayer.id && s.roomId === roomId)
+    : undefined;
   const localRole = asPlayerRole(localPlayer?.role ?? joinDefaults.defaultRole);
   const isSpectator = localRole === 'spectator';
   const hostIdentityHex = room?.hostIdentity.toHexString() ?? null;
@@ -311,19 +334,22 @@ export function projectGameUiState({
       recentTaunt,
       controls: isSpectator
         ? [
-            { id: 'boost', label: 'Boost', enabled: false },
-            { id: 'spill', label: 'Spill', enabled: false },
-            { id: 'shield', label: 'Shield', enabled: false },
-            { id: 'watch', label: 'Watch', enabled: true },
+            { id: 'boost', label: 'Coffee (4)', enabled: roomState === 'live' && (localSpectatorState?.energy ?? 0) >= 4 },
+            { id: 'spill', label: 'Spill (3)', enabled: roomState === 'live' && (localSpectatorState?.energy ?? 0) >= 3 },
+            { id: 'shield', label: 'Shield (3)', enabled: roomState === 'live' && (localSpectatorState?.energy ?? 0) >= 3 },
+            { id: 'watch', label: `Energy: ${localSpectatorState?.energy ?? 0}`, enabled: false },
           ]
         : [
             { id: 'move', label: 'Move', enabled: roomState === 'live' },
             { id: 'claim', label: 'Claim', enabled: roomState === 'live' },
-            { id: 'contest', label: 'Contest', enabled: false },
-            { id: 'collect', label: 'Collect', enabled: false },
           ],
       isHost,
       actionStatusLabel: matchActionStatus(connection),
+      spectatorEnergy: localSpectatorState?.energy ?? 0,
+      localPlayerEffects: {
+        speedBoost: localPlayerState ? toNumberMs(localPlayerState.speedUntilMs) > nowMs : false,
+        stunned: localPlayerState ? toNumberMs(localPlayerState.disabledUntilMs) > nowMs : false,
+      },
     },
     resultsView: {
       roomId,
