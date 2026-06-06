@@ -76,8 +76,8 @@ Hard-reload both tabs (`Cmd+Shift+R`) if you recently reset the database.
 | 5 | Host | **Start round** | Both auto-route to Match |
 | 6 | Both | Use move pad (Up/Down/Left/Right) | Tokens move; no persistent action error |
 | 7 | Both | **Claim** mode: click an **adjacent non-alley** tile | Tile ownership color updates on **both** clients |
-| 8 | Guest | Switch to **Contest**, click adjacent **enemy-owned** tile | Ownership flips to guest on both clients; contest event in HUD |
-| 9 | Either | Move onto a pickup cell, click **Collect** (or walk onto it to auto-collect) | Pickup disappears; cash/speed/shield applies; collect event in HUD |
+| 8 | Guest | Switch to **Contest**, click adjacent **enemy-owned** tile | Tile shows contested state; ownership flips after the scheduled tick resolves the contest; contest/takeover events appear in HUD |
+| 9 | Either | Move onto a pickup cell, click **Collect** | Pickup disappears; cash/speed/shield applies; collect event in HUD |
 | 10 | Both | Check HUD event feed | Claim/contest/collect events appear |
 | 11 | Both | Wait for timer expiry (~90s) or host **End round** | Both auto-route to Results (scheduled tick also finalizes live rooms) |
 | 12 | Both | Review scoreboard | Rows match server `round_results` (tile income + pickups + bonus) |
@@ -93,7 +93,7 @@ Hard-reload both tabs (`Cmd+Shift+R`) if you recently reset the database.
 - **Match:** live board shows Kenney atlas sprites (tiles, tokens, pickups) with primitive fallbacks if atlas load fails.
 - **Match HUD:** timer label ticks from `endsAtMs`; standings reflect owned tiles; cash stash shows live pickup earnings.
 - **Claim / Contest:** use the mode toggle; claim only hits open/adjacent tiles; contest targets adjacent enemy tiles.
-- **Collect:** button enabled when standing on an active pickup; walk-on also auto-collects via server.
+- **Collect:** button enabled when standing on an active pickup; pickups are explicit and do not auto-collect on movement.
 - **Leave room:** non-host players can leave from Lobby/Match/Results; host can close from Lobby/Results.
 - **Results:** `round_results` rows drive the scoreboard; host **Rematch** enabled in results state.
 
@@ -121,8 +121,8 @@ See also [docs/TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 - [x] Host starts round; both route to Match
 - [x] Move buttons call live movement on both clients
 - [ ] Board **Claim** mode claims adjacent tile and updates both clients
-- [ ] **Contest** mode flips adjacent enemy tile on both clients
-- [ ] **Collect** pickup while standing on cell (button or walk-on)
+- [ ] **Contest** mode marks an adjacent enemy tile contested, then flips it on both clients after tick resolution
+- [ ] **Collect** pickup while standing on cell using the **Collect** button
 - [ ] Round auto-ends at timer (or host **End round**); both route to Results with server score rows
 - [ ] Host rematches; both return to Lobby
 

@@ -76,6 +76,7 @@ export const spectatorState = table(
     roomId: t.u32().index('btree'),
     energy: t.u32(),
     lastActionAtMs: t.i64(),
+    lastRegenAtMs: t.i64().default(0n),
   }
 );
 

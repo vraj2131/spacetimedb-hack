@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import type { GameUiActions, MatchViewModel, MoveDirection } from '../screens/uiState';
 
 type TileActionMode = 'claim' | 'contest';
+type SpectatorTileTarget = 'spill_slick' | 'deli_shield';
+type SpectatorEventType = SpectatorTileTarget | 'coffee_boost';
 
 type MatchBottomDockProps = {
   viewModel: MatchViewModel;
@@ -10,8 +13,8 @@ type MatchBottomDockProps = {
   tileActionMode: TileActionMode;
   onTileActionModeChange: (mode: TileActionMode) => void;
   onCollect: () => void;
-  spectatorTarget: string | null;
-  onSpectatorTargetChange: (target: string | null) => void;
+  spectatorTarget: SpectatorTileTarget | null;
+  onSpectatorTargetChange: (target: SpectatorTileTarget | null) => void;
 };
 
 const MOVE_BUTTONS: Array<{ direction: MoveDirection; label: string; className: string }> = [
@@ -21,7 +24,7 @@ const MOVE_BUTTONS: Array<{ direction: MoveDirection; label: string; className: 
   { direction: 'right', label: '→', className: 'match-dpad__btn match-dpad__btn--right' },
 ];
 
-function controlToEventType(controlId: string): string | null {
+function controlToEventType(controlId: string): SpectatorEventType | null {
   switch (controlId) {
     case 'boost':
       return 'coffee_boost';
@@ -52,6 +55,8 @@ export function MatchBottomDock({
   spectatorTarget,
   onSpectatorTargetChange,
 }: MatchBottomDockProps) {
+  const [showBoostTargets, setShowBoostTargets] = useState(false);
+
   return (
     <footer className="match-bottom-dock match-panel">
       <div className="match-bottom-dock__status">
@@ -130,7 +135,8 @@ export function MatchBottomDock({
             <div className="match-bottom-dock__btn-row">
               {viewModel.controls.map(control => {
                 const eventType = controlToEventType(control.id);
-                const isActive = spectatorTarget === eventType;
+                const isActive =
+                  eventType === 'coffee_boost' ? showBoostTargets : spectatorTarget === eventType;
                 return (
                   <button
                     key={control.id}
@@ -139,15 +145,38 @@ export function MatchBottomDock({
                     disabled={!control.enabled}
                     onClick={() => {
                       if (!eventType) return;
+                      if (eventType === 'coffee_boost') {
+                        onSpectatorTargetChange(null);
+                        setShowBoostTargets(prev => !prev);
+                        return;
+                      }
+                      setShowBoostTargets(false);
                       onSpectatorTargetChange(spectatorTarget === eventType ? null : eventType);
                     }}
                   >
                     {control.label}
-                    {isActive ? ' · tile' : ''}
+                    {isActive ? (eventType === 'coffee_boost' ? ' · player' : ' · tile') : ''}
                   </button>
                 );
               })}
             </div>
+            {showBoostTargets ? (
+              <div className="match-bottom-dock__btn-row">
+                {viewModel.liveStandings.map(entry => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    className={dockButtonClass()}
+                    onClick={() => {
+                      actions.onSpectatorEvent('coffee_boost', Number(entry.id), undefined);
+                      setShowBoostTargets(false);
+                    }}
+                  >
+                    {entry.name}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
       )}

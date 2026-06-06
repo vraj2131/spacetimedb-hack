@@ -99,6 +99,57 @@ test('startRound seeds 10 pickups', { skip }, async () => {
   }
 });
 
+test('startRound seeds pickups in fixed cells and type order', { skip }, async () => {
+  if (skip) return;
+  const { host, room } = await startedRound();
+
+  const pickups = [...host.conn.db.pickups.iter()]
+    .filter((p) => p.roomId === room.id)
+    .sort((a, b) => a.id - b.id);
+
+  assert.deepEqual(
+    pickups.map((p) => [p.x, p.y, p.pickupType]),
+    [
+      [2, 1, 'cash'],
+      [3, 1, 'cash'],
+      [4, 1, 'cash'],
+      [5, 1, 'cash'],
+      [22, 1, 'coffee'],
+      [23, 1, 'coffee'],
+      [24, 1, 'coffee'],
+      [10, 6, 'shield'],
+      [14, 10, 'shield'],
+      [17, 13, 'shield'],
+    ]
+  );
+});
+
+test('moving onto a pickup does not collect until collect_pickup', { skip }, async () => {
+  if (skip) return;
+  const { host, room, playerId } = await startedRound();
+
+  const pickup = [...host.conn.db.pickups.iter()].find(
+    (p) => p.roomId === room.id && p.x === 2 && p.y === 1 && p.pickupType === 'cash'
+  );
+  assert.ok(pickup, 'fixed cash pickup exists at (2,1)');
+
+  await host.conn.reducers.movePlayer({ direction: 'right' });
+
+  const moved = host.conn.db.player_state.playerId.find(playerId);
+  assert.deepEqual([moved.x, moved.y], [2, 1]);
+  assert.equal(moved.cash, 0);
+  assert.equal(moved.pickupCashTotal, 0);
+  assert.equal(host.conn.db.pickups.id.find(pickup.id).active, true);
+
+  await host.conn.reducers.collectPickup({ pickupId: pickup.id });
+
+  const collected = host.conn.db.player_state.playerId.find(playerId);
+  assert.equal(collected.cash, 5);
+  assert.equal(collected.pickupCashTotal, 5);
+  assert.equal(host.conn.db.pickups.id.find(pickup.id).active, false);
+  await assert.rejects(host.conn.reducers.collectPickup({ pickupId: pickup.id }));
+});
+
 test('collect_pickup rejects when not on the pickup tile', { skip }, async () => {
   if (skip) return;
   const { host, room } = await startedRound();

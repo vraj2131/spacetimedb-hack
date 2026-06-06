@@ -47,6 +47,8 @@ test('Match screen uses outside-chrome layout with fullscreen GameStage', () => 
   assert.match(bottomDock, /Claim/);
   assert.match(bottomDock, /Contest/);
   assert.match(bottomDock, /Collect/);
+  assert.match(bottomDock, /viewModel\.liveStandings\.map\(entry/);
+  assert.match(bottomDock, /actions\.onSpectatorEvent\('coffee_boost', Number\(entry\.id\), undefined\)/);
 
   const topBar = read('src/components/MatchTopBar.tsx');
   assert.match(topBar, /Leave room/);

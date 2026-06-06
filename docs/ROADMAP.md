@@ -53,7 +53,7 @@ and `EventBus` (`renderState:update` in, `tile:click` out).
 
 | Lane | Owner | Owns (writes outright) | Mission |
 |---|---|---|---|
-| **L1 — Backend / gameplay** | Dev A | `spacetimedb/**` (sole writer of `tables.ts`) | Finish `contest_tile`, `collect_pickup`, pickups spawn, auto-end/scoring tick, spectator + taunt reducers. |
+| **L1 — Backend / gameplay** | Dev A | `spacetimedb/**` (sole writer of `tables.ts`) | Maintain full gameplay reducers: timed contests, explicit pickups, auto-end/scoring tick, spectator powers, reset, and taunts. |
 | **L2 — Live integration / screens / HUD** | Dev B | `src/adapters/`, `src/screens/`, `src/components/` (HUD), `src/App.tsx` | **MVP critical path:** live `RenderState` adapter + a controller that subscribes to tables and drives the real screens via live reducers. |
 | **L3 — Rendering / board / art** | Dev C | `src/game/**`, `public/assets/**` | Primitives → Kenney sprites; then the custom 3D→2D iso bake pipeline. |
 | **L4 — Spectator / flavor / judge / polish** | Dev D | `reducers.spectator.ts`+`flavor.ts` (with A), spectator/taunt UI, `Judge.tsx`, juice | 3 spectator powers + energy, the LLM taunt worker live, Judge projector, polish. |
@@ -79,19 +79,19 @@ end → results → rematch.
   - ~~`leave_room` / `close_room` reducers~~ — done + integration-tested.
   - ~~Lobby/Match/Results Leave + Close buttons~~ — done; errors surface on all room screens.
   - ~~Auto-route to Join when `roomId === 0`~~ — done in `App.tsx`.
-- **L1 (parallel):** auto-end when `endsAtMs` passes (lazy check in an action reducer, or scheduled
-  `tick_round` if the spike holds — `docs/spike-findings.md`). Manual `end_round` stays as fallback.
+- **L1 (parallel):** scheduled `tick_round` handles per-second income, contest resolution,
+  spectator regen, and auto-end. Manual `end_round` stays as fallback.
 - **L3 (parallel, non-blocking):** Rendering **Stage A** — Kenney atlas for tiles, tokens, pickups, and fx overlays with primitive fallbacks. _(L3A landed.)_
 - **L4 (parallel, prep):** make `SpectatorBar`/`TauntBubble`/`EventFeed` real components fed by live `events`.
 - **Cut line:** demo with manual `end_round` and Kenney-or-primitive board if needed. Never cut the live adapter + core loop.
 
 ### M2 — Full gameplay
-- **L1:** `contest_tile` (adjacent enemy, shield/spill interaction, single-flip), `collect_pickup`
-  (one-time), `pickups` spawns (`map.ts` `PICKUP_SPAWNS`), per-tick income + ownership-bonus scoring, energy regen.
-- **L4:** `trigger_spectator_event` (3 powers: `coffee_boost`, `spill_slick`, `deli_shield`; the
-  pigeon power sets `player_state.pigeonBlocked`, which `claim_tile` already consumes), energy +
-  cooldowns, `post_taunt` + live `agents/run-flavor.ts` (Groq→Gemini→static).
-- **L2:** wire spectator controls, pickups, contest, event feed/taunt bubble to live data. _(M2B landed: Claim/Contest mode, Collect button, dedicated tile actions.)_
+- **L1:** landed timed `contest_tile`, one-time `collect_pickup`, fixed `PICKUP_SPAWNS`,
+  per-tick income + ownership-bonus scoring, spectator regen/cooldowns, and `reset_demo_room`.
+- **L4:** landed `trigger_spectator_event` (3 powers: `coffee_boost`, `spill_slick`, `deli_shield`)
+  with energy + cooldowns, plus `post_taunt` + live `agents/run-flavor.ts` (Groq→Gemini→static).
+- **L2:** M2B landed spectator controls, pickups, contest, coffee player targeting, and live data wiring.
+  Remaining UI polish: event feed and taunt bubble components.
 - **L3:** effect overlays (`fx_spill/shield/speed`), owner-color tint, directional tokens.
 
 ### M3 — Custom art + polish
@@ -111,7 +111,7 @@ At `end_round` (`roundEnd.ts` + `scoring.ts`):
 - **`totalScore`** — sum of the three
 
 Per-tick income: street 1, bodega 3, alley 0 (`map.ts` → `tick_round`).
-Cash pickups: 4× per round, +5 each, auto-collected on step.
+Cash pickups: 4× per round, +5 each, collected explicitly via `collect_pickup`.
 
 ---
 
@@ -197,6 +197,6 @@ function projectRenderState(tiles, players, playerStates, pickups, nowMs): Rende
 
 - **M1:** two tabs play a full round on live data; `projectRenderState` + `useLiveGameState`
   unit-tested; `npm test` + `npm run test:integration` green; `tsc -b`.
-- **M2:** brief acceptance tests — contest flips once, pickups collect once, spectator powers gated
+- **M2:** brief acceptance tests — contests resolve once, pickups collect once, spectator powers gated
   by energy, scores match server math.
 - **M3:** custom atlas swaps in with no `BoardScene` code change (frame-key parity); maincloud cold-wake smoke before demo.

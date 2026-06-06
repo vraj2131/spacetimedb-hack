@@ -50,8 +50,19 @@ export const SPAWN_POINTS: ReadonlyArray<{ x: number; y: number }> = [
   { x: 21, y: 0 }, // 9 extra top-edge
 ];
 
-/** Pickup spawn cells. Empty stub for this PR; seeded in a later slice. */
-export const PICKUP_SPAWNS: ReadonlyArray<{ x: number; y: number }> = [];
+/** Fixed pickup spawn cells, in seeding order. Every cell is non-`alley`. */
+export const PICKUP_SPAWNS: ReadonlyArray<{ x: number; y: number }> = [
+  { x: 2, y: 1 },
+  { x: 3, y: 1 },
+  { x: 4, y: 1 },
+  { x: 5, y: 1 },
+  { x: 22, y: 1 },
+  { x: 23, y: 1 },
+  { x: 24, y: 1 },
+  { x: 10, y: 6 },
+  { x: 14, y: 10 },
+  { x: 17, y: 13 },
+];
 
 /**
  * Returns the tile type for a cell — the minimal v1 NYC layout:

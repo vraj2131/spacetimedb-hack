@@ -53,11 +53,6 @@ const GAME_TABLES = [
 
 const SCHEMA_TABLES = [...GAME_TABLES, 'round_tick'];
 
-// Reducers still scaffolded as stubs. Implemented reducers are checked below.
-const STUB_REDUCERS = [
-  ['reset_demo_room', files.reducersRoom],
-];
-
 const SCREENS = ['Join', 'Lobby', 'Match', 'Results', 'Judge'];
 
 const checks = [
@@ -75,11 +70,16 @@ const checks = [
   ['reducers.dev.ts no longer keeps set_value', !files.reducersDev.includes("'set_value'")],
   ['reducers.dev.ts defines lifecycle hooks', files.reducersDev.includes('clientConnected') && files.reducersDev.includes('clientDisconnected')],
 
-  // --- server: game reducer stubs throw ----------------------------------
-  ...STUB_REDUCERS.map(([name, src]) => [
-    `reducer ${name} is a stub that throws 'not implemented'`,
-    src.includes(`'${name}'`) && src.includes(`not implemented: ${name}`),
-  ]),
+  // --- server: no gameplay reducer stubs remain --------------------------
+  [
+    'gameplay reducers have no not implemented stubs',
+    [
+      files.reducersRoom,
+      files.reducersPlayer,
+      files.reducersSpectator,
+      files.reducersTick,
+    ].every(src => !src.includes('not implemented')),
+  ],
 
   // --- server: implemented reducers (Wave 1 scrollable-world) ------------
   [
@@ -131,10 +131,11 @@ const checks = [
       files.reducersRoom.includes('ctx.db.tiles.roomId.delete'),
   ],
   [
-    'contest_tile is implemented (transfers tile ownership)',
+    'contest_tile is implemented (starts a timed contest)',
     files.reducersPlayer.includes("name: 'contest_tile'") &&
       !files.reducersPlayer.includes('not implemented: contest_tile') &&
-      files.reducersPlayer.includes('contest_tile: tile is not adjacent'),
+      files.reducersPlayer.includes('contest_tile: tile is not adjacent') &&
+      files.reducersPlayer.includes('contestedBy: player.id'),
   ],
   [
     'collect_pickup is implemented (deactivates pickup)',
@@ -159,7 +160,15 @@ const checks = [
     files.reducersTick.includes("name: 'tick_round'") &&
       !files.reducersTick.includes('not implemented: tick_round') &&
       files.reducersTick.includes('ctx.senderAuth.isInternal') &&
-      files.reducersTick.includes('scheduleNextTick'),
+      files.reducersTick.includes('resolveExpiredContests') &&
+      files.reducersTick.includes('applyRoomTileIncome'),
+  ],
+  [
+    'reset_demo_room is implemented (host hard-deletes room data)',
+    files.reducersRoom.includes("name: 'reset_demo_room'") &&
+      !files.reducersRoom.includes('not implemented: reset_demo_room') &&
+      files.reducersRoom.includes('deleteRoomScopedRows(ctx, room.id)') &&
+      files.reducersRoom.includes('rehomeRoomPlayers(ctx, room.id)'),
   ],
   [
     'post_taunt is implemented (inserts taunts)',

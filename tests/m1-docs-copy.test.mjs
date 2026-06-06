@@ -84,7 +84,7 @@ test('M1 smoke doc records verified pass criteria', () => {
   }
   for (const pending of [
     'Board \\*\\*Claim\\*\\* mode claims adjacent tile and updates both clients',
-    '\\*\\*Contest\\*\\* mode flips adjacent enemy tile on both clients',
+    '\\*\\*Contest\\*\\* mode marks an adjacent enemy tile contested',
     '\\*\\*Collect\\*\\* pickup while standing on cell',
   ]) {
     assert.match(smoke, new RegExp(`- \\[ \\] ${pending}`));

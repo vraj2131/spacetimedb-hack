@@ -343,3 +343,48 @@ test('close_room rejects a live room', { skip }, async () => {
 
   await assert.rejects(host.conn.reducers.closeRoom({ roomId: room.id }));
 });
+
+test('reset_demo_room hard-deletes a live room for the host', { skip }, async () => {
+  if (skip) return;
+  const host = await newPlayer();
+  await host.conn.reducers.registerPlayer({ name: 'Host', role: 'player' });
+  await host.conn.reducers.createRoom();
+  const room = [...host.conn.db.rooms.iter()].find(
+    (r) => hex(r.hostIdentity) === hex(host.identity)
+  );
+
+  const guest = await newPlayer();
+  await guest.conn.reducers.registerPlayer({ name: 'Guest', role: 'player' });
+  await guest.conn.reducers.joinRoom({ roomCode: room.code });
+
+  await host.conn.reducers.startRound({ roomId: room.id });
+  await host.conn.reducers.resetDemoRoom({ roomCode: ` ${room.code.toLowerCase()} ` });
+
+  await waitFor(
+    () => playerOf(host.conn, host.identity)?.roomId === 0,
+    'host rehomed after reset'
+  );
+  await waitFor(
+    () => playerOf(guest.conn, guest.identity)?.roomId === 0,
+    'guest rehomed after reset'
+  );
+  assert.equal([...host.conn.db.rooms.iter()].find((r) => r.id === room.id), undefined);
+  assert.equal([...host.conn.db.tiles.iter()].find((t) => t.roomId === room.id), undefined);
+  assert.equal([...host.conn.db.round_tick.iter()].find((t) => t.roomId === room.id), undefined);
+});
+
+test('reset_demo_room rejects non-host callers', { skip }, async () => {
+  if (skip) return;
+  const host = await newPlayer();
+  await host.conn.reducers.registerPlayer({ name: 'Host', role: 'player' });
+  await host.conn.reducers.createRoom();
+  const room = [...host.conn.db.rooms.iter()].find(
+    (r) => hex(r.hostIdentity) === hex(host.identity)
+  );
+
+  const guest = await newPlayer();
+  await guest.conn.reducers.registerPlayer({ name: 'Guest', role: 'player' });
+  await guest.conn.reducers.joinRoom({ roomCode: room.code });
+
+  await assert.rejects(guest.conn.reducers.resetDemoRoom({ roomCode: room.code }));
+});

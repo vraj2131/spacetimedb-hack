@@ -4,13 +4,14 @@ import {
   MAP_WIDTH,
   MAP_HEIGHT,
   SPAWN_POINTS,
+  PICKUP_SPAWNS,
   MAX_SPAWN_SEATS,
   tileTypeAt,
   incomeForTileType,
 } from './map';
 import { timestampMs } from './time';
 import { finishRound } from './roundEnd';
-import { scheduleNextTick } from './reducers.tick';
+import { scheduleRoomTick } from './reducers.tick';
 
 /**
  * Room lifecycle reducers.
@@ -152,6 +153,7 @@ export const joinRoom = spacetimedb.reducer(
         roomId: room.id,
         energy: 10,
         lastActionAtMs: 0n,
+        lastRegenAtMs: 0n,
       });
     }
   }
@@ -212,7 +214,12 @@ export const startRound = spacetimedb.reducer(
 
     const spectators = [...ctx.db.spectator_state.roomId.filter(roomId)];
     for (const spec of spectators) {
-      ctx.db.spectator_state.playerId.update({ ...spec, energy: 10, lastActionAtMs: 0n });
+      ctx.db.spectator_state.playerId.update({
+        ...spec,
+        energy: 10,
+        lastActionAtMs: 0n,
+        lastRegenAtMs: 0n,
+      });
     }
 
     seated.forEach((player, seatIndex) => {
@@ -237,17 +244,8 @@ export const startRound = spacetimedb.reducer(
       });
     });
 
-    // Seed pickups: 4 cash, 3 coffee, 3 shield on random non-alley tiles.
+    // Seed pickups: 4 cash, 3 coffee, 3 shield on fixed non-alley tiles.
     ctx.db.pickups.roomId.delete(roomId);
-
-    const nonAlleyTiles: { x: number; y: number }[] = [];
-    for (let x = 0; x < MAP_WIDTH; x++) {
-      for (let y = 0; y < MAP_HEIGHT; y++) {
-        if (tileTypeAt(x, y) !== 'alley') {
-          nonAlleyTiles.push({ x, y });
-        }
-      }
-    }
 
     const pickupDefs: { pickupType: string; value: number }[] = [
       { pickupType: 'cash', value: 5 },
@@ -262,9 +260,11 @@ export const startRound = spacetimedb.reducer(
       { pickupType: 'shield', value: 0 },
     ];
 
-    for (const def of pickupDefs) {
-      const idx = ctx.random.integerInRange(0, nonAlleyTiles.length - 1);
-      const pos = nonAlleyTiles[idx];
+    for (const [index, def] of pickupDefs.entries()) {
+      const pos = PICKUP_SPAWNS[index];
+      if (!pos || tileTypeAt(pos.x, pos.y) === 'alley') {
+        throw new Error('start_round: invalid fixed pickup spawn');
+      }
       ctx.db.pickups.insert({
         id: 0, // auto-increment
         roomId,
@@ -284,7 +284,7 @@ export const startRound = spacetimedb.reducer(
       endsAtMs: nowMs + ROUND_DURATION_MS,
       lastTickAtMs: 0n,
     });
-    scheduleNextTick(ctx, roomId);
+    scheduleRoomTick(ctx, roomId);
   }
 );
 
@@ -334,7 +334,12 @@ export const rematch = spacetimedb.reducer(
     ctx.db.round_tick.roomId.delete(roomId);
     const spectators = [...ctx.db.spectator_state.roomId.filter(roomId)];
     for (const spec of spectators) {
-      ctx.db.spectator_state.playerId.update({ ...spec, energy: 10, lastActionAtMs: 0n });
+      ctx.db.spectator_state.playerId.update({
+        ...spec,
+        energy: 10,
+        lastActionAtMs: 0n,
+        lastRegenAtMs: 0n,
+      });
     }
 
     ctx.db.rooms.id.update({
@@ -431,7 +436,18 @@ export const closeRoom = spacetimedb.reducer(
 export const resetDemoRoom = spacetimedb.reducer(
   { name: 'reset_demo_room' },
   { roomCode: t.string() },
-  _ctx => {
-    throw new Error('not implemented: reset_demo_room');
+  (ctx, { roomCode }) => {
+    const code = roomCode.trim().toUpperCase();
+    const room = ctx.db.rooms.code.find(code);
+    if (!room) {
+      throw new SenderError('reset_demo_room: room not found');
+    }
+    if (room.hostIdentity.toHexString() !== ctx.sender.toHexString()) {
+      throw new SenderError('reset_demo_room: only the host can reset the room');
+    }
+
+    rehomeRoomPlayers(ctx, room.id);
+    deleteRoomScopedRows(ctx, room.id);
+    ctx.db.rooms.id.delete(room.id);
   }
 );

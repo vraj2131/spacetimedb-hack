@@ -45,6 +45,10 @@ async function newPlayer() {
   return handle;
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function playerOf(conn, identity) {
   return [...conn.db.players.iter()].find(
     (p) => hex(p.identity) === hex(identity)
@@ -128,7 +132,7 @@ test('spectator gets energy 10 on join, can trigger spill_slick', { skip }, asyn
 
 test('rejects when not enough energy', { skip }, async () => {
   if (skip) return;
-  const { host, room } = await startedRound();
+  const { room, playerId } = await startedRound();
 
   const watcher = await newPlayer();
   await watcher.conn.reducers.registerPlayer({ name: 'Drainer', role: 'spectator' });
@@ -140,41 +144,40 @@ test('rejects when not enough energy', { skip }, async () => {
     'spectator_state seeded'
   );
 
-  // Pick a tile
-  const tile = [...watcher.conn.db.tiles.iter()].find(
-    (t) => t.roomId === room.id
-  );
-  assert.ok(tile);
-
-  // Drain all 10 energy: 3 spill_slick calls = 9 energy used, then 1 more = 3 cost > 1 remaining
+  // Drain to 1 energy despite scheduled regen: 3 coffee boosts cost 12 total,
+  // with two +1 regen windows between them.
   await watcher.conn.reducers.triggerSpectatorEvent({
-    eventType: 'spill_slick',
-    targetPlayerId: undefined,
-    targetTileId: tile.id,
-  }); // 10 -> 7
+    eventType: 'coffee_boost',
+    targetPlayerId: playerId,
+    targetTileId: undefined,
+  }); // 10 -> 6
 
+  await sleep(4_100);
   await watcher.conn.reducers.triggerSpectatorEvent({
-    eventType: 'spill_slick',
-    targetPlayerId: undefined,
-    targetTileId: tile.id,
-  }); // 7 -> 4
+    eventType: 'coffee_boost',
+    targetPlayerId: playerId,
+    targetTileId: undefined,
+  }); // 7 -> 3
 
+  await sleep(4_100);
   await watcher.conn.reducers.triggerSpectatorEvent({
-    eventType: 'spill_slick',
-    targetPlayerId: undefined,
-    targetTileId: tile.id,
-  }); // 4 -> 1
+    eventType: 'coffee_boost',
+    targetPlayerId: playerId,
+    targetTileId: undefined,
+  }); // 4 -> 0
 
-  // Wait for energy to reach 1
+  // Wait for energy to reach 0 or 1, then a 3-cost spill should fail.
   await waitFor(
     () => {
       const s = watcher.conn.db.spectator_state.playerId.find(watcherPlayer.id);
-      return s && s.energy === 1 ? s : null;
+      return s && s.energy <= 1 ? s : null;
     },
-    'energy drained to 1'
+    'energy drained below spill cost'
   );
 
-  // Next call should fail: 1 < 3 cost
+  const tile = [...watcher.conn.db.tiles.iter()].find((t) => t.roomId === room.id);
+  assert.ok(tile);
+
   await assert.rejects(
     watcher.conn.reducers.triggerSpectatorEvent({
       eventType: 'spill_slick',
@@ -182,6 +185,31 @@ test('rejects when not enough energy', { skip }, async () => {
       targetTileId: tile.id,
     }),
     'should reject when not enough energy'
+  );
+});
+
+test('spectator powers enforce cooldown independent of energy', { skip }, async () => {
+  if (skip) return;
+  const { room } = await startedRound();
+
+  const watcher = await newPlayer();
+  await watcher.conn.reducers.registerPlayer({ name: 'Cooldown', role: 'spectator' });
+  await watcher.conn.reducers.joinRoom({ roomCode: room.code });
+
+  const tile = [...watcher.conn.db.tiles.iter()].find((t) => t.roomId === room.id);
+  assert.ok(tile);
+
+  await watcher.conn.reducers.triggerSpectatorEvent({
+    eventType: 'spill_slick',
+    targetPlayerId: undefined,
+    targetTileId: tile.id,
+  });
+  await assert.rejects(
+    watcher.conn.reducers.triggerSpectatorEvent({
+      eventType: 'deli_shield',
+      targetPlayerId: undefined,
+      targetTileId: tile.id,
+    })
   );
 });
 

@@ -17,6 +17,7 @@ type MatchScreenProps = {
 };
 
 type TileActionMode = 'claim' | 'contest';
+type SpectatorTileTarget = 'spill_slick' | 'deli_shield';
 
 export function MatchScreen({
   viewModel,
@@ -25,7 +26,7 @@ export function MatchScreen({
   localPlayerId,
 }: MatchScreenProps) {
   const canPlay = !viewModel.isSpectator && viewModel.roomState === 'live';
-  const [spectatorTarget, setSpectatorTarget] = useState<string | null>(null);
+  const [spectatorTarget, setSpectatorTarget] = useState<SpectatorTileTarget | null>(null);
   const [tileActionMode, setTileActionMode] = useState<TileActionMode>('claim');
 
   const localToken = renderState.tokens.find(token => token.playerId === localPlayerId);
