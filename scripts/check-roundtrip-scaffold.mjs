@@ -50,15 +50,10 @@ const GAME_TABLES = [
   'round_tick',
 ];
 
-// Reducers still scaffolded as stubs. start_round + move_player + the PR-A1
-// room spine (register_player, create_room, join_room) are now implemented (see
-// the implemented checks below) so they are intentionally absent.
+// Reducers still scaffolded as stubs. Implemented reducers are checked below.
 const STUB_REDUCERS = [
   ['reset_demo_room', files.reducersRoom],
   ['tick_round', files.reducersRoom],
-  ['contest_tile', files.reducersPlayer],
-  ['collect_pickup', files.reducersPlayer],
-  ['trigger_spectator_event', files.reducersSpectator],
   ['post_taunt', files.reducersFlavor],
 ];
 
@@ -135,6 +130,24 @@ const checks = [
     files.reducersRoom.includes("name: 'rematch'") &&
       !files.reducersRoom.includes('not implemented: rematch') &&
       files.reducersRoom.includes('ctx.db.tiles.roomId.delete'),
+  ],
+  [
+    'contest_tile is implemented (transfers tile ownership)',
+    files.reducersPlayer.includes("name: 'contest_tile'") &&
+      !files.reducersPlayer.includes('not implemented: contest_tile') &&
+      files.reducersPlayer.includes('contest_tile: tile is not adjacent'),
+  ],
+  [
+    'collect_pickup is implemented (deactivates pickup)',
+    files.reducersPlayer.includes("name: 'collect_pickup'") &&
+      !files.reducersPlayer.includes('not implemented: collect_pickup') &&
+      files.reducersPlayer.includes('collect_pickup: not on the pickup'),
+  ],
+  [
+    'trigger_spectator_event is implemented (deducts energy)',
+    files.reducersSpectator.includes("name: 'trigger_spectator_event'") &&
+      !files.reducersSpectator.includes('not implemented: trigger_spectator_event') &&
+      files.reducersSpectator.includes('ENERGY_COST'),
   ],
 
   // --- server: barrel + map ----------------------------------------------

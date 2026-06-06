@@ -115,6 +115,8 @@ function baseInput(overrides = {}) {
         rank: 1,
       },
     ],
+    spectatorStates: [],
+    playerStates: [],
     localIdentity: identity(HOST_HEX),
     nowMs: NOW_MS,
     connection: { isConnected: true, isSubmitting: false },
@@ -182,7 +184,7 @@ test('projectGameUiState exposes join connection errors and spectator controls',
 
   assert.equal(state.isSpectator, true);
   assert.equal(state.join.connection.label, 'claim failed');
-  assert.equal(state.match.controls.every(control => control.id === 'watch' ? control.enabled : !control.enabled), true);
+  assert.equal(state.match.controls.every(control => !control.enabled), true);
 });
 
 test('projectGameUiState gates host actions by room state', () => {
