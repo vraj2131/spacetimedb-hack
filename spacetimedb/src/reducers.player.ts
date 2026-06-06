@@ -107,8 +107,16 @@ export const movePlayer = spacetimedb.reducer(
   }
 );
 
+/** Convert a number or bigint millisecond value to a plain number. */
+function toNumberMs(value: number | bigint): number {
+  return typeof value === 'bigint' ? Number(value) : value;
+}
+
 /** Claim-event lifetime in the feed (ms). */
 const CLAIM_EVENT_TTL_MS = 30_000n;
+
+/** Contest-event lifetime in the feed (ms). */
+const CONTEST_EVENT_TTL_MS = 30_000n;
 
 // claim_tile(tile_id) -> player only; adjacent only; set ownership; append event.
 export const claimTile = spacetimedb.reducer(
@@ -181,12 +189,88 @@ export const claimTile = spacetimedb.reducer(
   }
 );
 
-// contest_tile(tile_id) -> player only; adjacent enemy only; start takeover timer.
+// contest_tile(tile_id) -> player only; adjacent enemy tile; instant takeover.
 export const contestTile = spacetimedb.reducer(
   { name: 'contest_tile' },
   { tileId: t.u32() },
-  _ctx => {
-    throw new Error('not implemented: contest_tile');
+  (ctx, { tileId }) => {
+    const player = [...ctx.db.players.identity.filter(ctx.sender)][0];
+    if (!player) {
+      throw new SenderError('contest_tile: caller is not a registered player');
+    }
+    if (player.role !== 'player') {
+      throw new SenderError('contest_tile: only players can contest');
+    }
+
+    const room = ctx.db.rooms.id.find(player.roomId);
+    if (!room || room.state !== 'live') {
+      throw new SenderError('contest_tile: round is not live');
+    }
+
+    const state = ctx.db.player_state.playerId.find(player.id);
+    if (!state) {
+      throw new SenderError('contest_tile: no player_state (round not started)');
+    }
+
+    const tile = ctx.db.tiles.id.find(tileId);
+    if (!tile) {
+      throw new SenderError('contest_tile: tile not found');
+    }
+    if (tile.roomId !== player.roomId) {
+      throw new SenderError('contest_tile: tile belongs to another room');
+    }
+
+    // Tile must be owned by a different player.
+    if (tile.ownerPlayerId === undefined || tile.ownerPlayerId === null) {
+      throw new SenderError('contest_tile: tile is not owned');
+    }
+    if (tile.ownerPlayerId === player.id) {
+      throw new SenderError('contest_tile: cannot contest your own tile');
+    }
+
+    // Manhattan-adjacent only (distance === 1).
+    const distance =
+      Math.abs(gridCoord(tile.x) - gridCoord(state.x)) +
+      Math.abs(gridCoord(tile.y) - gridCoord(state.y));
+    if (distance !== 1) {
+      throw new SenderError('contest_tile: tile is not adjacent');
+    }
+
+    const nowMs = timestampMs(ctx);
+
+    // Tile must not be shielded.
+    if (toNumberMs(tile.shieldUntilMs) > toNumberMs(nowMs)) {
+      throw new SenderError('contest_tile: tile is shielded');
+    }
+
+    const previousOwner = tile.ownerPlayerId;
+
+    // Instant takeover: set ownership, clear contest fields.
+    ctx.db.tiles.id.update({
+      ...tile,
+      ownerPlayerId: player.id,
+      contestedBy: undefined,
+      contestedUntilMs: 0n,
+    });
+
+    // Update caller's last contest timestamp.
+    ctx.db.player_state.playerId.update({
+      ...state,
+      lastContestAtMs: nowMs,
+    });
+
+    // Insert contest event.
+    ctx.db.events.insert({
+      id: 0n, // auto-increment
+      roomId: player.roomId,
+      eventType: 'contest',
+      sourcePlayerId: player.id,
+      targetPlayerId: previousOwner,
+      targetTileId: tile.id,
+      message: `${player.name} contested (${gridCoord(tile.x)},${gridCoord(tile.y)})`,
+      createdAtMs: nowMs,
+      expiresAtMs: nowMs + CONTEST_EVENT_TTL_MS,
+    });
   }
 );
 
