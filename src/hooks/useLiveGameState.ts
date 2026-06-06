@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSpacetimeDB, useTable } from 'spacetimedb/react';
 import { projectGameUiState } from '../adapters/projectGameUiState.ts';
 import { projectRenderState } from '../adapters/projectRenderState.ts';
+import { resolvePickupIdAt } from '../adapters/resolvePickupId.ts';
 import { resolveTileIdAt } from '../adapters/resolveTileId.ts';
 import { DbConnection, tables } from '../module_bindings/index.ts';
 import { EMPTY_RENDER_STATE, type RenderState } from '../renderState.ts';
@@ -299,15 +300,36 @@ export function useLiveGameState(): LiveGameState {
         if (tileId == null) {
           throw new Error(`No tile at (${x}, ${y})`);
         }
-        const tile = tiles.find(t => t.id === tileId);
-        if (tile && tile.ownerPlayerId != null && tile.ownerPlayerId !== localPlayer?.id) {
-          await conn!.reducers.contestTile({ tileId });
-        } else {
-          await conn!.reducers.claimTile({ tileId });
-        }
+        await conn!.reducers.claimTile({ tileId });
       });
     },
-    [conn, localPlayer?.id, roomId, runAction, tiles],
+    [conn, roomId, runAction, tiles],
+  );
+
+  const onContestTileAt = useCallback(
+    (x: number, y: number) => {
+      void runAction(async () => {
+        const tileId = resolveTileIdAt(tiles, roomId, x, y);
+        if (tileId == null) {
+          throw new Error(`No tile at (${x}, ${y})`);
+        }
+        await conn!.reducers.contestTile({ tileId });
+      });
+    },
+    [conn, roomId, runAction, tiles],
+  );
+
+  const onCollectPickupAt = useCallback(
+    (x: number, y: number) => {
+      void runAction(async () => {
+        const pickupId = resolvePickupIdAt(pickups, roomId, x, y);
+        if (pickupId == null) {
+          throw new Error(`No active pickup at (${x}, ${y})`);
+        }
+        await conn!.reducers.collectPickup({ pickupId });
+      });
+    },
+    [conn, pickups, roomId, runAction],
   );
 
   const onContestTile = useCallback(
@@ -372,6 +394,8 @@ export function useLiveGameState(): LiveGameState {
       onReturnToDev: () => {},
       onMove,
       onClaimTileAt,
+      onContestTileAt,
+      onCollectPickupAt,
       onContestTile,
       onCollectPickup,
       onSpectatorEvent,
@@ -379,14 +403,16 @@ export function useLiveGameState(): LiveGameState {
     }),
     [
       onClaimTileAt,
+      onCloseRoom,
       onCollectPickup,
+      onCollectPickupAt,
       onContestTile,
+      onContestTileAt,
       onCreateRoom,
       onEndRound,
       onJoinRoom,
       onLeaveRoom,
       onMove,
-      onCloseRoom,
       onRematch,
       onSpectatorEvent,
       onSpectatorTileClick,
@@ -406,6 +432,7 @@ export function useLiveGameState(): LiveGameState {
         roundResults,
         spectatorStates,
         playerStates,
+        pickups,
         localIdentity: identity ?? null,
         nowMs,
         connection: {
@@ -427,6 +454,7 @@ export function useLiveGameState(): LiveGameState {
       isSubmitting,
       localPlayer,
       nowMs,
+      pickups,
       playerStates,
       players,
       room,

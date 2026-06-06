@@ -117,6 +117,7 @@ function baseInput(overrides = {}) {
     ],
     spectatorStates: [],
     playerStates: [],
+    pickups: [],
     localIdentity: identity(HOST_HEX),
     nowMs: NOW_MS,
     connection: { isConnected: true, isSubmitting: false },
@@ -236,8 +237,31 @@ test('projectGameUiState exposes leave and close affordances plus live cash', ()
 
   assert.equal(lobbyState.lobby.canCloseRoom, true);
   assert.equal(lobbyState.lobby.canLeaveRoom, true);
-  assert.equal(lobbyState.match.claimHint, 'Click an adjacent tile to claim it or contest an enemy tile.');
+  assert.equal(lobbyState.match.claimHint, 'Pick Claim or Contest, then click an adjacent tile.');
   assert.equal(lobbyState.match.localCash, 12);
   assert.equal(resultsState.resultsView.canCloseRoom, true);
   assert.equal(resultsState.resultsView.canLeaveRoom, true);
+});
+
+test('projectGameUiState enables collect when local player stands on active pickup', () => {
+  const state = projectGameUiState(
+    baseInput({
+      localIdentity: identity(GUEST_HEX),
+      playerStates: [
+        {
+          playerId: 2,
+          roomId: ROOM_ID,
+          x: 5,
+          y: 5,
+          speedUntilMs: 0,
+          disabledUntilMs: 0,
+          cash: 3,
+        },
+      ],
+      pickups: [{ id: 7, roomId: ROOM_ID, x: 5, y: 5, active: true }],
+    }),
+  );
+
+  assert.equal(state.match.localPickupId, 7);
+  assert.equal(state.match.canCollectPickup, true);
 });

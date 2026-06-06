@@ -28,9 +28,9 @@ spectator energy regen, auto round-end, contest, pickups, spectator powers,
 `post_taunt`, and the live/static flavor worker path are implemented and covered
 by integration or unit tests.
 
-1. **Browser smoke not CI-gated** — run the two-client checklist in `docs/M1_SMOKE_TEST.md`.
-2. **M2B client controls** — Claim/Contest mode toggle and Collect button still open; board click currently auto-routes claim vs contest.
-3. **Judge/resilience and polish** — projector view, refresh/no-leakage acceptance, SFX/mobile, and deployment hardening remain open.
+1. **Browser smoke not CI-gated** — run the two-client checklist in `docs/M1_SMOKE_TEST.md` (includes claim, contest, collect, auto-end).
+2. **L4 UI polish** — `EventFeed`, `SpectatorBar`, `TauntBubble`, and Judge projector view remain open.
+3. **Judge/resilience and polish** — refresh/no-leakage acceptance, SFX/mobile, and deployment hardening remain open.
 
 ## Direction
 
@@ -81,7 +81,7 @@ end → results → rematch.
 - **L4:** `trigger_spectator_event` (3 powers: `coffee_boost`, `spill_slick`, `deli_shield`; the
   pigeon power sets `player_state.pigeonBlocked`, which `claim_tile` already consumes), energy +
   cooldowns, `post_taunt` + live `agents/run-flavor.ts` (Groq→Gemini→static).
-- **L2:** wire spectator controls, pickups, contest, event feed/taunt bubble to live data.
+- **L2:** wire spectator controls, pickups, contest, event feed/taunt bubble to live data. _(M2B landed: Claim/Contest mode, Collect button, dedicated tile actions.)_
 - **L3:** effect overlays (`fx_spill/shield/speed`), owner-color tint, directional tokens.
 
 ### M3 — Custom art + polish

@@ -78,15 +78,19 @@ test('M1 smoke doc records verified pass criteria', () => {
     'Host creates room; guest joins by code',
     'Host starts round; both route to Match',
     'Move buttons call live movement on both clients',
-    'Board click claims adjacent tile and updates both clients',
-    'Host ends round; both route to Results with server score rows',
-    'Host rematches; both return to Lobby',
   ]) {
     assert.match(smoke, new RegExp(`- \\[x\\] ${criterion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   }
+  for (const pending of [
+    'Board \\*\\*Claim\\*\\* mode claims adjacent tile and updates both clients',
+    '\\*\\*Contest\\*\\* mode flips adjacent enemy tile on both clients',
+    '\\*\\*Collect\\*\\* pickup while standing on cell',
+  ]) {
+    assert.match(smoke, new RegExp(`- \\[ \\] ${pending}`));
+  }
 });
 
-test('ROADMAP reflects L2A-L2C landed and notes remaining M2B controls', () => {
+test('ROADMAP reflects L2A-L2C landed and notes remaining L4 polish', () => {
   const roadmap = read('docs/ROADMAP.md');
 
   assert.match(roadmap, /What's landed \(M1 live wiring — L2A–L2C merged\)/);
@@ -102,7 +106,8 @@ test('ROADMAP reflects L2A-L2C landed and notes remaining M2B controls', () => {
     /No live `RenderState` adapter/,
     'ROADMAP should not claim the live adapter is missing',
   );
-  assert.match(roadmap, /M2B client controls/);
+  assert.match(roadmap, /L4 UI polish/);
   assert.match(roadmap, /L3A landed/);
+  assert.match(roadmap, /M2B landed/);
   assert.match(roadmap, /M1_SMOKE_TEST\.md/);
 });

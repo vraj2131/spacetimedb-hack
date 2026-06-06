@@ -13,11 +13,20 @@ type MatchScreenProps = {
   localPlayerId: number | null;
 };
 
+type TileActionMode = 'claim' | 'contest';
+
 const overlayButtonClass =
   'rounded-md border border-yellow-300/40 bg-slate-900/90 px-3 py-2 text-xs font-black uppercase tracking-wide text-yellow-100 transition hover:border-yellow-200/70 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50';
 
 const moveButtonClass =
   'rounded-md border border-yellow-300/30 bg-slate-900/80 px-3 py-2 text-xs font-black uppercase tracking-wide text-yellow-100 transition hover:border-yellow-200/70 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50';
+
+const actionModeButtonClass = (active: boolean) =>
+  `rounded-md border px-3 py-2 text-xs font-black uppercase tracking-wide transition ${
+    active
+      ? 'border-yellow-300 bg-yellow-800/80 text-yellow-100'
+      : 'border-yellow-300/30 bg-slate-900/80 text-yellow-100 hover:border-yellow-200/70 hover:bg-slate-800'
+  }`;
 
 const MOVE_BUTTONS: Array<{ direction: MoveDirection; label: string; className?: string }> = [
   { direction: 'up', label: 'Up', className: 'col-start-2' },
@@ -28,10 +37,14 @@ const MOVE_BUTTONS: Array<{ direction: MoveDirection; label: string; className?:
 
 function controlToEventType(controlId: string): string | null {
   switch (controlId) {
-    case 'boost': return 'coffee_boost';
-    case 'spill': return 'spill_slick';
-    case 'shield': return 'deli_shield';
-    default: return null;
+    case 'boost':
+      return 'coffee_boost';
+    case 'spill':
+      return 'spill_slick';
+    case 'shield':
+      return 'deli_shield';
+    default:
+      return null;
   }
 }
 
@@ -43,6 +56,9 @@ export function MatchScreen({
 }: MatchScreenProps) {
   const canPlay = !viewModel.isSpectator && viewModel.roomState === 'live';
   const [spectatorTarget, setSpectatorTarget] = useState<string | null>(null);
+  const [tileActionMode, setTileActionMode] = useState<TileActionMode>('claim');
+
+  const localToken = renderState.tokens.find(token => token.playerId === localPlayerId);
 
   const handleTileClick = (x: number, y: number) => {
     if (viewModel.isSpectator && spectatorTarget) {
@@ -51,8 +67,23 @@ export function MatchScreen({
       return;
     }
     if (!canPlay) return;
+    if (tileActionMode === 'contest') {
+      actions.onContestTileAt(x, y);
+      return;
+    }
     actions.onClaimTileAt(x, y);
   };
+
+  const handleCollect = () => {
+    if (!canPlay || !viewModel.canCollectPickup || !localToken) return;
+    actions.onCollectPickupAt(localToken.x, localToken.y);
+  };
+
+  const actionHint = viewModel.isSpectator
+    ? 'Spectator watch mode'
+    : tileActionMode === 'contest'
+      ? 'Contest mode — click an adjacent enemy tile'
+      : 'Claim mode — click an adjacent open tile';
 
   return (
     <main className="match-screen min-h-screen bg-slate-950 p-3 text-white">
@@ -96,9 +127,7 @@ export function MatchScreen({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-yellow-300/90">Controls</p>
-                <h2 className="text-sm font-black text-white md:text-base">
-                  {viewModel.isSpectator ? 'Spectator watch mode' : 'Move and claim adjacent tiles'}
-                </h2>
+                <h2 className="text-sm font-black text-white md:text-base">{actionHint}</h2>
                 {viewModel.actionStatusLabel ? (
                   <p className="mt-1 text-xs font-semibold text-rose-300">{viewModel.actionStatusLabel}</p>
                 ) : null}
@@ -147,6 +176,30 @@ export function MatchScreen({
                     Speed Boost!
                   </div>
                 )}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className={actionModeButtonClass(tileActionMode === 'claim')}
+                    onClick={() => setTileActionMode('claim')}
+                  >
+                    Claim
+                  </button>
+                  <button
+                    type="button"
+                    className={actionModeButtonClass(tileActionMode === 'contest')}
+                    onClick={() => setTileActionMode('contest')}
+                  >
+                    Contest
+                  </button>
+                  <button
+                    type="button"
+                    className={overlayButtonClass}
+                    disabled={!viewModel.canCollectPickup}
+                    onClick={handleCollect}
+                  >
+                    Collect
+                  </button>
+                </div>
                 <div className="mt-3 grid max-w-[12rem] grid-cols-3 gap-2">
                   {MOVE_BUTTONS.map(button => (
                     <button
