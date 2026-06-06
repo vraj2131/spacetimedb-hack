@@ -180,13 +180,10 @@ See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for the common failure ca
 - browser never connects
 - teammate environment drift
 
-## Next Up (M1 hardening → M2)
+## Next Up
 
-Backend reducer bodies are done (see [docs/BACKEND_HANDOFF.md](docs/BACKEND_HANDOFF.md)). M1 live client wiring is merged:
+Backend gameplay reducers, live client wiring, Kenney atlas (L3A), M2B Match controls, and room lifecycle (`leave_room` / `close_room`) are merged on `main`. See [docs/BACKEND_HANDOFF.md](docs/BACKEND_HANDOFF.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
 
-1. ~~implement room reducer bodies~~ — **done**
-2. ~~wire Join + Lobby + Match + Results screens to those reducers~~ — **done** (L2C)
-3. ~~project live game state into `RenderState` for Phaser~~ — **done** (L2A/L2C)
-4. **Run the two-client browser smoke** — [docs/M1_SMOKE_TEST.md](docs/M1_SMOKE_TEST.md)
+**Demo gate:** re-run the two-client browser smoke — [docs/M1_SMOKE_TEST.md](docs/M1_SMOKE_TEST.md) (claim/contest/collect, auto-end, leave/close).
 
-Parallel lanes still open: L3 Kenney atlas sprites, L1 auto round-end, M2 contest/pickups/spectators.
+**Still open:** L4 UI polish (`EventFeed`, `SpectatorBar`, `TauntBubble`, Judge view), resilience hardening, and M3 custom art bake.

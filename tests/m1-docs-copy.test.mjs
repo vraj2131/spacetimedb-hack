@@ -45,6 +45,11 @@ test('README reflects merged M1 live wiring instead of pending client work', () 
     /wire Join \+ Lobby \+ Match \+ Results screens to those reducers$/m,
     'README should not list unwired screens as next up',
   );
+  assert.doesNotMatch(
+    readme,
+    /Parallel lanes still open: L3 Kenney atlas sprites/i,
+    'README should not list landed lanes as still open',
+  );
 });
 
 test('checklist marks M1 live UI items complete and atlas sprites landed', () => {
@@ -67,6 +72,7 @@ test('checklist marks M1 live UI items complete and atlas sprites landed', () =>
   }
 
   assert.match(checklist, /Slice 2b — Room lifecycle/);
+  assert.match(checklist, /Slice 2c — Live Match controls/);
   assert.match(checklist, /M1_SMOKE_TEST\.md/);
 });
 

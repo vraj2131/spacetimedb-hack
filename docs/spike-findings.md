@@ -160,6 +160,6 @@ are retained as historical spike context.
 
 - [x] Spike findings documented (this file)
 - [x] Reference + tests committed (`spikes/`, `tests/spike*.test.mjs`)
-- [ ] PR merged to `main`
-- [ ] Close obsolete `spike/spacetimedb-api-verification` branch
-- [ ] Announce Spike 1 hook shape to Dev E; Spike 2 integration plan to Dev A/C at Slice 4
+- [x] PR merged to `main` (Spike 1 + Spike 2 syntax integrated in Slice 4)
+- [x] Close obsolete `spike/spacetimedb-api-verification` branch (if still open locally, delete)
+- [x] Announce Spike 1 hook shape to Dev E; Spike 2 integration plan to Dev A/C at Slice 4

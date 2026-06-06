@@ -197,19 +197,19 @@ In `docs/checklist.md` (when Dev A updates docs):
 - [ ] `agents/run-flavor.ts` worker (stub)
 - [ ] `agents/providers` groq + gemini + static
 
-Slice 9 items remain open until backend + UI wiring:
+Slice 9 items remain open until UI wiring:
 
-- [ ] `post_taunt` reducer + `TauntBubble`
-- [ ] Full worker STDB subscription
+- [ ] `TauntBubble` component
+- [ ] Full worker STDB subscription polish (optional; static fallback works with empty `.env`)
 
 ---
 
 ## 10. Open items — not Dev D scope (do not block merge)
 
-- Phaser `BoardScene` does not load atlas yet (Dev B / Slice 8)
-- `post_taunt` reducer still throws stub (gameplay / Slice 9)
-- `agents/run-flavor.ts` `npm start` is stub only (no STDB) — by design
-- `bodega_cat` is orange-tinted character stand-in until custom cat art
+- ~~Phaser `BoardScene` does not load atlas yet~~ — **done** (L3A; Kenney atlas with primitive fallbacks)
+- ~~`post_taunt` reducer still throws stub~~ — **done** (Slice 9 backend; `TauntBubble` UI still open)
+- `agents/run-flavor.ts` live STDB polling path landed; standalone dry-run still works without API keys
+- `bodega_cat` is orange-tinted character stand-in until custom cat art (M3)
 
 ---
 
