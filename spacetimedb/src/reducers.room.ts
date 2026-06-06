@@ -7,7 +7,9 @@ import {
   MAX_SPAWN_SEATS,
   tileTypeAt,
   incomeForTileType,
+  type TileType,
 } from './map';
+import { ownershipBonusForTileType, rankResults } from './scoring';
 
 /**
  * Room lifecycle reducers.
@@ -194,8 +196,61 @@ export const startRound = spacetimedb.reducer(
 export const endRound = spacetimedb.reducer(
   { name: 'end_round' },
   { roomId: t.u32() },
-  _ctx => {
-    throw new Error('not implemented: end_round');
+  (ctx, { roomId }) => {
+    const room = ctx.db.rooms.id.find(roomId);
+    if (!room) {
+      throw new Error('end_round: room not found');
+    }
+    if (room.hostIdentity.toHexString() !== ctx.sender.toHexString()) {
+      throw new Error('end_round: only the host can end the round');
+    }
+    if (room.state !== 'live') {
+      throw new Error('end_round: room is not live');
+    }
+
+    const roomTiles = [...ctx.db.tiles.roomId.filter(roomId)];
+    const players = [...ctx.db.players.roomId.filter(roomId)].filter(
+      p => p.role === 'player'
+    );
+
+    // Lazy scoring: tally owned tiles + collected cash at the final whistle.
+    const lines = [];
+    for (const player of players) {
+      const state = ctx.db.player_state.playerId.find(player.id);
+      if (!state) {
+        continue;
+      }
+      const owned = roomTiles.filter(tile => tile.ownerPlayerId === player.id);
+      const tileScore = owned.reduce((sum, tile) => sum + tile.incomeValue, 0);
+      const ownershipBonus = owned.reduce(
+        (sum, tile) => sum + ownershipBonusForTileType(tile.tileType as TileType),
+        0
+      );
+      const cashScore = state.pickupCashTotal;
+      lines.push({
+        playerId: player.id,
+        tileScore,
+        cashScore,
+        ownershipBonus,
+        totalScore: tileScore + cashScore + ownershipBonus,
+      });
+    }
+
+    for (const line of rankResults(lines)) {
+      ctx.db.round_results.insert({
+        id: 0n, // auto-increment
+        roomId,
+        roundNumber: room.roundNumber,
+        playerId: line.playerId,
+        tileScore: line.tileScore,
+        cashScore: line.cashScore,
+        ownershipBonus: line.ownershipBonus,
+        totalScore: line.totalScore,
+        rank: line.rank,
+      });
+    }
+
+    ctx.db.rooms.id.update({ ...room, state: 'results' });
   }
 );
 
@@ -203,8 +258,32 @@ export const endRound = spacetimedb.reducer(
 export const rematch = spacetimedb.reducer(
   { name: 'rematch' },
   { roomId: t.u32() },
-  _ctx => {
-    throw new Error('not implemented: rematch');
+  (ctx, { roomId }) => {
+    const room = ctx.db.rooms.id.find(roomId);
+    if (!room) {
+      throw new Error('rematch: room not found');
+    }
+    if (room.hostIdentity.toHexString() !== ctx.sender.toHexString()) {
+      throw new Error('rematch: only the host can rematch');
+    }
+    if (room.state !== 'results') {
+      throw new Error('rematch: room is not in results');
+    }
+
+    // Clear the finished round's per-room rows; keep the room + its players.
+    ctx.db.tiles.roomId.delete(roomId);
+    ctx.db.player_state.roomId.delete(roomId);
+    ctx.db.events.roomId.delete(roomId);
+    ctx.db.round_results.roomId.delete(roomId);
+    ctx.db.pickups.roomId.delete(roomId);
+
+    ctx.db.rooms.id.update({
+      ...room,
+      state: 'lobby',
+      roundNumber: room.roundNumber + 1,
+      startsAtMs: 0n,
+      endsAtMs: 0n,
+    });
   }
 );
 
