@@ -61,13 +61,23 @@ export function LobbyScreen({ viewModel, actions }: LobbyScreenProps) {
                   Start round
                 </button>
               )}
-              <button
-                type="button"
-                onClick={actions.onReturnToDev}
-                className="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-700"
-              >
-                Dev sync
-              </button>
+              {viewModel.canCloseRoom ? (
+                <button
+                  type="button"
+                  onClick={() => actions.onCloseRoom(viewModel.roomId)}
+                  className="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-700"
+                >
+                  Close room
+                </button>
+              ) : viewModel.canLeaveRoom ? (
+                <button
+                  type="button"
+                  onClick={() => actions.onLeaveRoom(viewModel.roomId)}
+                  className="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-700"
+                >
+                  Leave room
+                </button>
+              ) : null}
             </div>
           </section>
 
@@ -85,6 +95,9 @@ export function LobbyScreen({ viewModel, actions }: LobbyScreenProps) {
             </li>
             <li className="rounded-md border border-slate-200 bg-slate-50 p-3">
               During a live round, use Return to match if you stepped back to the lobby view.
+            </li>
+            <li className="rounded-md border border-slate-200 bg-slate-50 p-3">
+              Close room ends the session in lobby or results. Leave room exits only your own seat.
             </li>
           </ul>
         </aside>

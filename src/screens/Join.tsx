@@ -92,13 +92,6 @@ export function JoinScreen({ viewModel, actions }: JoinScreenProps) {
             >
               Join room
             </button>
-            <button
-              type="button"
-              onClick={actions.onReturnToDev}
-              className="rounded-md border border-slate-300 bg-slate-50 px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-600"
-            >
-              Dev sync
-            </button>
           </div>
         </div>
 

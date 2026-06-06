@@ -7,7 +7,7 @@ import { SpacetimeDBProvider } from 'spacetimedb/react';
 import { DbConnection, ErrorContext } from './module_bindings/index.ts';
 
 const HOST =
-  import.meta.env.VITE_SPACETIMEDB_HOST ?? 'ws://127.0.0.1:3000';
+  import.meta.env.VITE_SPACETIMEDB_HOST ?? 'https://maincloud.spacetimedb.com';
 const DB_NAME = import.meta.env.VITE_SPACETIMEDB_DB_NAME ?? 'bodega-blitz';
 const CLIENT_SLOT = new URLSearchParams(window.location.search).get('client');
 const TOKEN_KEY = CLIENT_SLOT

@@ -68,6 +68,7 @@ export type LiveSpectatorStateRow = {
 export type LivePlayerStateRow = {
   readonly playerId: number;
   readonly roomId: number;
+  readonly cash?: number;
   readonly speedUntilMs: number | bigint;
   readonly disabledUntilMs: number | bigint;
 };
@@ -274,6 +275,8 @@ export function projectGameUiState({
   const spectatorCount = roomPlayers.filter(player => player.role === 'spectator').length;
   const canStartRound = isHost && roomState === 'lobby' && !isSpectator;
   const canRematch = isHost && roomState === 'results' && !isSpectator;
+  const canLeaveRoom = roomId > 0;
+  const canCloseRoom = isHost && (roomState === 'lobby' || roomState === 'results');
   const connectionState = buildConnectionState(connection);
   const roster = roomPlayers.map(player => ({
     id: String(player.id),
@@ -315,6 +318,8 @@ export function projectGameUiState({
       roster,
       isHost,
       canStartRound,
+      canLeaveRoom,
+      canCloseRoom,
       capacityLabel: `${playerCount} / ${MAX_PLAYERS}`,
       stateLabel: canStartRound ? 'Ready' : 'Waiting for host',
     },
@@ -346,6 +351,9 @@ export function projectGameUiState({
       isHost,
       actionStatusLabel: matchActionStatus(connection),
       spectatorEnergy: localSpectatorState?.energy ?? 0,
+      localCash: localPlayerState?.cash ?? 0,
+      claimHint: 'Click an adjacent tile to claim it or contest an enemy tile.',
+      canLeaveRoom,
       localPlayerEffects: {
         speedBoost: localPlayerState ? toNumberMs(localPlayerState.speedUntilMs) > nowMs : false,
         stunned: localPlayerState ? toNumberMs(localPlayerState.disabledUntilMs) > nowMs : false,
@@ -362,6 +370,8 @@ export function projectGameUiState({
           : 'Waiting for round_results rows.',
       results,
       canRematch,
+      canCloseRoom,
+      canLeaveRoom,
       hasResults: results.length > 0,
     },
   };

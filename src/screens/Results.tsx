@@ -27,26 +27,30 @@ export function ResultsScreen({ viewModel, actions }: ResultsScreenProps) {
           <div className="mt-6 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={actions.onBackToLobby}
-              className="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-700"
-            >
-              Back to lobby
-            </button>
-            <button
-              type="button"
               onClick={() => actions.onRematch(viewModel.roomId)}
               disabled={!viewModel.canRematch}
               className="rounded-md bg-teal-700 px-5 py-3 text-sm font-black uppercase tracking-wide text-white"
             >
               Rematch
             </button>
-            <button
-              type="button"
-              onClick={actions.onReturnToDev}
-              className="rounded-md border border-slate-300 bg-slate-50 px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-600"
-            >
-              Dev sync
-            </button>
+            {viewModel.canCloseRoom ? (
+              <button
+                type="button"
+                onClick={() => actions.onCloseRoom(viewModel.roomId)}
+                className="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-700"
+              >
+                Close room
+              </button>
+            ) : null}
+            {viewModel.canLeaveRoom ? (
+              <button
+                type="button"
+                onClick={() => actions.onLeaveRoom(viewModel.roomId)}
+                className="rounded-md border border-slate-300 bg-slate-50 px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-600"
+              >
+                Leave room
+              </button>
+            ) : null}
           </div>
         </div>
 

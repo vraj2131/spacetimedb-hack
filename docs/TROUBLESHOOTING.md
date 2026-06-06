@@ -12,17 +12,17 @@ curl -sSf https://install.spacetimedb.com | sh
 
 ## The app connects to the wrong server
 
-Check `.env.local`. The scaffold default is:
-
-```env
-VITE_SPACETIMEDB_HOST=ws://127.0.0.1:3000
-VITE_SPACETIMEDB_DB_NAME=bodega-blitz
-```
-
-If you are smoke-testing Maincloud, switch only the host:
+Check `.env.local`. The release/default host is:
 
 ```env
 VITE_SPACETIMEDB_HOST=https://maincloud.spacetimedb.com
+VITE_SPACETIMEDB_DB_NAME=bodega-blitz
+```
+
+For local development, switch only the host:
+
+```env
+VITE_SPACETIMEDB_HOST=ws://127.0.0.1:3000
 ```
 
 ## `npm test` fails

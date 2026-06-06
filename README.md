@@ -17,7 +17,7 @@ a manual two-client demo are the next verification gate** — see [docs/M1_SMOKE
 - The temporary `sync_state` round-trip baseline remains in Dev sync for scaffold proof.
 - **Backend contract (historical): [docs/BACKEND_HANDOFF.md](docs/BACKEND_HANDOFF.md).**
 
-This repo uses a **local-first dev path**. Maincloud is for smoke tests and deployment, not daily iteration.
+This repo ships with a **Maincloud-default app target**. Local SpacetimeDB remains the recommended developer iteration path.
 
 ## Required Installs
 
@@ -78,6 +78,12 @@ Default env values:
 
 ```env
 VITE_SPACETIMEDB_DB_NAME=bodega-blitz
+VITE_SPACETIMEDB_HOST=https://maincloud.spacetimedb.com
+```
+
+For local development, override only the host in `.env.local`:
+
+```env
 VITE_SPACETIMEDB_HOST=ws://127.0.0.1:3000
 ```
 
@@ -115,7 +121,7 @@ Shared Phase 0 shape:
 
 ```env
 VITE_SPACETIMEDB_DB_NAME=bodega-blitz
-VITE_SPACETIMEDB_HOST=ws://127.0.0.1:3000
+VITE_SPACETIMEDB_HOST=https://maincloud.spacetimedb.com
 
 # Optional future flavor worker vars:
 GROQ_API_KEY=
@@ -124,8 +130,8 @@ GEMINI_API_KEY=
 
 Rules:
 
-- local host is the default
-- Maincloud is an override
+- Maincloud is the player-facing default
+- local host is the developer override
 - `.env.example` is the team contract
 - `.env.local` is machine-specific
 

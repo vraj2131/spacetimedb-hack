@@ -18,6 +18,8 @@ export { init, onConnect, onDisconnect, setValue } from './reducers.dev';
 export {
   createRoom,
   joinRoom,
+  leaveRoom,
+  closeRoom,
   startRound,
   endRound,
   rematch,

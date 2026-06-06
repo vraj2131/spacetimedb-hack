@@ -102,6 +102,9 @@ export function MatchScreen({
                 {viewModel.actionStatusLabel ? (
                   <p className="mt-1 text-xs font-semibold text-rose-300">{viewModel.actionStatusLabel}</p>
                 ) : null}
+                {!viewModel.isSpectator ? (
+                  <p className="mt-1 text-xs font-semibold text-yellow-100/85">{viewModel.claimHint}</p>
+                ) : null}
               </div>
               <div className="flex flex-wrap gap-2">
                 {viewModel.isHost ? (
@@ -117,14 +120,23 @@ export function MatchScreen({
                 <button type="button" onClick={() => actions.onBackToLobby()} className={overlayButtonClass}>
                   Lobby
                 </button>
-                <button type="button" onClick={() => actions.onReturnToDev()} className={overlayButtonClass}>
-                  Dev sync
-                </button>
+                {viewModel.canLeaveRoom ? (
+                  <button
+                    type="button"
+                    onClick={() => actions.onLeaveRoom(viewModel.roomId)}
+                    className={overlayButtonClass}
+                  >
+                    Leave room
+                  </button>
+                ) : null}
               </div>
             </div>
 
             {canPlay ? (
               <>
+                <div className="mt-2 rounded-md border border-emerald-400/40 bg-emerald-900/30 px-3 py-2 text-center text-xs font-black uppercase text-emerald-100">
+                  Cash stash: ${viewModel.localCash}
+                </div>
                 {viewModel.localPlayerEffects.stunned && (
                   <div className="mt-2 rounded-md border border-red-400/50 bg-red-900/40 px-3 py-2 text-center text-xs font-black uppercase text-red-200">
                     Stunned!
