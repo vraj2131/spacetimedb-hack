@@ -7,3 +7,6 @@ dist/
 .env.*.local
 spacetimedb/node_modules/
 spacetimedb/dist/
+
+# Generated SpacetimeDB client bindings — run `npm run spacetime:generate` to (re)create.
+src/module_bindings/

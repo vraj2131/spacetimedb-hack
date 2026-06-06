@@ -22,7 +22,10 @@ npm install
 cd ..
 cp .env.example .env.local
 spacetime login
+npm run spacetime:generate
 ```
+
+Bindings under `src/module_bindings/` are generated locally and not committed. Run `npm run spacetime:generate` after every pull that changes `spacetimedb/`.
 
 ## Daily Development
 
@@ -49,4 +52,4 @@ Then open the app and confirm:
 - the page loads
 - the connection status becomes `Connected`
 - the shared value updates across two tabs
-- the Phaser placeholder shows a version number
+- the Phaser board canvas renders the 12×8 grid beside the sync proof

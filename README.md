@@ -45,7 +45,10 @@ npm install
 cd ..
 cp .env.example .env.local
 spacetime login
+npm run spacetime:generate
 ```
+
+Bindings under `src/module_bindings/` are generated locally and not committed. Run `npm run spacetime:generate` after every pull that changes `spacetimedb/`.
 
 Then start the local scaffold:
 
@@ -78,7 +81,9 @@ What the baseline proves right now:
 - the React client connects
 - the reducer can mutate shared state
 - subscriptions update across tabs
-- Phaser is installed and available for the next slice
+- the Phaser board canvas mounts live beside the round-trip proof
+- the full game schema, reducer stubs (throwing `not implemented`), screen
+  router, and Tailwind v4 are scaffolded for the gameplay slices
 
 ## Maincloud Smoke Test Flow
 
@@ -135,7 +140,7 @@ Then confirm all of these manually:
 - the browser app loads
 - the connection status shows `Connected`
 - the shared value syncs across two tabs
-- the Phaser placeholder shows a version number
+- the Phaser board canvas renders the 12×8 grid beside the sync proof
 - there are no missing env errors
 
 Each teammate should post in the team channel:
@@ -150,7 +155,7 @@ Each teammate should post in the team channel:
 - `spacetimedb/` holds the SpacetimeDB module
 - `src/` holds the current Vite React client
 - `src/module_bindings/` is generated and should not be edited by hand
-- Phaser is installed now, but gameplay scenes are not part of Phase 0
+- `src/game/PhaserGame.tsx` mounts the live board canvas; full BoardScene + EventBus land in Slice 2 (Dev B)
 - keep the `sync_state` proof until the first real gameplay slice replaces it
 
 ## Troubleshooting
@@ -169,7 +174,7 @@ Phase 0 ends only when the whole team can run the same scaffold successfully.
 
 Only after that do we start the first gameplay slice:
 
-1. replace `sync_state` with real game tables
-2. create room / join room flow
-3. render a basic board
-4. move two players on a synced grid
+1. implement room reducer bodies (`create_room`, `join_room`, `start_round`, …)
+2. wire Join + Lobby screens to those reducers
+3. project live game state into `RenderState` for Phaser
+4. `move_player` across two tabs on the synced grid

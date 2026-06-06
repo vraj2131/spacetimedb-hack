@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "node scripts/check-roundtrip-scaffold.mjs",
+    "test": "node scripts/check-roundtrip-scaffold.mjs && node --experimental-strip-types --test tests/*.test.mjs",
+    "test:scaffold": "node scripts/check-roundtrip-scaffold.mjs",
+    "test:unit": "node --experimental-strip-types --test tests/*.test.mjs",
     "spacetime:generate": "spacetime generate --lang typescript --out-dir src/module_bindings --module-path spacetimedb",
     "spacetime:publish:local": "spacetime publish bodega-blitz --module-path spacetimedb --server local",
     "spacetime:publish": "spacetime publish bodega-blitz --module-path spacetimedb --server maincloud"
@@ -19,9 +21,11 @@
     "spacetimedb": "^2.4.1"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^5.0.2",
+    "tailwindcss": "^4.3.0",
     "typescript": "~5.6.2",
     "vite": "^7.1.5"
   }
