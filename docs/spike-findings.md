@@ -146,6 +146,10 @@ If scheduled integration slips, Slice 4 can compute elapsed income / energy rege
 
 ## What was explicitly *not* done (per handbook)
 
+**Current status:** the live module has since integrated the scheduled-table
+syntax in `spacetimedb/src/reducers.tick.ts`; the older placeholder notes above
+are retained as historical spike context.
+
 - No edits to live `spacetimedb/src/` schema for spike tables
 - No edits to `App.tsx`, `renderState.ts`, or tracked `module_bindings`
 - Old branch `spike/spacetimedb-api-verification` is **obsolete** — do not merge (pre-spine, touched shared files)

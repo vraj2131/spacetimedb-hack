@@ -10,8 +10,8 @@ import {
   events,
   taunts,
   roundResults,
-  roundTick,
 } from './tables';
+import { roundTick, registerTickReducer } from './reducers.tick';
 
 /**
  * The single SpacetimeDB schema instance for the module.
@@ -34,6 +34,8 @@ const spacetimedb = schema({
   round_results: roundResults,
   round_tick: roundTick,
 });
+
+registerTickReducer(spacetimedb);
 
 export type AppSchema = typeof spacetimedb;
 export default spacetimedb;

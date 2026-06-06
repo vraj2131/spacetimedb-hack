@@ -170,7 +170,7 @@ export const roundResults = table(
 );
 
 // --- Tick (PLACEHOLDER — NOT FINAL) ------------------------------------------
-// NON-FINAL PLACEHOLDER: the 1s server tick.
+// The live scheduled round_tick table is defined in reducers.tick.ts.
 //
 // This is intentionally a *plain* table, NOT yet wired as a SpacetimeDB
 // scheduled table. The 2.x scheduled-reducer syntax needs a dedicated spike
@@ -180,11 +180,3 @@ export const roundResults = table(
 // `scheduled: () => tickRound` and the scheduledAt column switches to
 // `t.scheduleAt()`. Shape below mirrors the intended columns so the contract
 // is visible to the team now.
-export const roundTick = table(
-  { name: 'round_tick', public: true },
-  {
-    scheduledId: t.u64().primaryKey().autoInc(),
-    scheduledAtMs: t.i64(),
-    roomId: t.u32().index('btree'),
-  }
-);

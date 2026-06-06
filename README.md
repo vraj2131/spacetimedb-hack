@@ -4,6 +4,11 @@ Live multiplayer NYC block-control game built on SpacetimeDB. Players will fight
 
 ## Current Phase Status
 
+Current full-gameplay status: contest, pickups, spectator powers, scheduled tile
+income/energy ticks, server auto-end, rematch, and `post_taunt` are implemented
+and integration-tested. Browser smoke remains the repeatable manual demo gate:
+[docs/M1_SMOKE_TEST.md](docs/M1_SMOKE_TEST.md).
+
 Phase 0 (scaffold) is complete, **Wave 1 backend has landed**, and **M1 live client wiring
 is merged** (L2A–L2C): Join/Lobby/Match/Results call live reducers, `useLiveGameState`
 drives the screens, and Match passes a live `RenderState` into Phaser. **Browser smoke and
@@ -16,7 +21,7 @@ This repo uses a **local-first dev path**. Maincloud is for smoke tests and depl
 
 ## Required Installs
 
-- Node.js `20 LTS` or `22`
+- Node.js `20 LTS` or `22` (Node 24 is not a supported final-validation target)
 - SpacetimeDB CLI
 - Git
 - A modern browser

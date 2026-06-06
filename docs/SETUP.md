@@ -4,7 +4,7 @@ Use this when onboarding a teammate from a fresh clone.
 
 ## Requirements
 
-- Node.js `20 LTS` or `22`
+- Node.js `20 LTS` or `22` (Node 24 is not a supported final-validation target)
 - Git
 - SpacetimeDB CLI
 - A modern browser

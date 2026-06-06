@@ -23,9 +23,14 @@ to a **playable, good-looking game**.
 
 ## What's still open (M1 demo polish + M2+)
 
+Current backend/full-gameplay update: scheduled `tick_round`, per-tick tile income,
+spectator energy regen, auto round-end, contest, pickups, spectator powers,
+`post_taunt`, and the live/static flavor worker path are implemented and covered
+by integration or unit tests.
+
 1. **Browser smoke not CI-gated** — run the two-client checklist in `docs/M1_SMOKE_TEST.md`.
 2. **The board draws primitives** — colored diamonds + circles; the Kenney atlas isn't loaded (L3).
-3. **Auto round-end** — manual `end_round` works; `tick_round` / lazy auto-end still pending (L1).
+3. **Judge/resilience and polish** — projector view, refresh/no-leakage acceptance, SFX/mobile, and deployment hardening remain open.
 
 ## Direction
 

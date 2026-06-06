@@ -92,6 +92,8 @@ const SUBSCRIBE_QUERIES = [
   'SELECT * FROM events',
   'SELECT * FROM pickups',
   'SELECT * FROM round_results',
+  'SELECT * FROM round_tick',
+  'SELECT * FROM taunts',
 ];
 
 /**

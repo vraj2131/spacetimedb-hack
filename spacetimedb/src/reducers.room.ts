@@ -7,10 +7,10 @@ import {
   MAX_SPAWN_SEATS,
   tileTypeAt,
   incomeForTileType,
-  type TileType,
 } from './map';
-import { ownershipBonusForTileType, rankResults } from './scoring';
 import { timestampMs } from './time';
+import { finishRound } from './roundEnd';
+import { scheduleNextTick } from './reducers.tick';
 
 /**
  * Room lifecycle reducers.
@@ -245,6 +245,7 @@ export const startRound = spacetimedb.reducer(
       startsAtMs: nowMs,
       endsAtMs: nowMs + ROUND_DURATION_MS,
     });
+    scheduleNextTick(ctx, roomId);
   }
 );
 
@@ -264,52 +265,7 @@ export const endRound = spacetimedb.reducer(
       throw new SenderError('end_round: room is not live');
     }
 
-    const roomTiles = [...ctx.db.tiles.roomId.filter(roomId)];
-    const players = [...ctx.db.players.roomId.filter(roomId)].filter(
-      p => p.role === 'player'
-    );
-
-    // Lazy scoring: tally owned tiles + collected cash at the final whistle.
-    const lines = [];
-    for (const player of players) {
-      const state = ctx.db.player_state.playerId.find(player.id);
-      if (!state) {
-        continue;
-      }
-      const owned = roomTiles.filter(tile => tile.ownerPlayerId === player.id);
-      const tileScore = owned.reduce(
-        (sum, tile) => sum + Number(tile.incomeValue),
-        0,
-      );
-      const ownershipBonus = owned.reduce(
-        (sum, tile) => sum + ownershipBonusForTileType(tile.tileType as TileType),
-        0
-      );
-      const cashScore = state.pickupCashTotal;
-      lines.push({
-        playerId: player.id,
-        tileScore,
-        cashScore,
-        ownershipBonus,
-        totalScore: tileScore + cashScore + ownershipBonus,
-      });
-    }
-
-    for (const line of rankResults(lines)) {
-      ctx.db.round_results.insert({
-        id: 0n, // auto-increment
-        roomId,
-        roundNumber: room.roundNumber,
-        playerId: line.playerId,
-        tileScore: line.tileScore,
-        cashScore: line.cashScore,
-        ownershipBonus: line.ownershipBonus,
-        totalScore: line.totalScore,
-        rank: line.rank,
-      });
-    }
-
-    ctx.db.rooms.id.update({ ...room, state: 'results' });
+    finishRound(ctx, room);
   }
 );
 
@@ -358,15 +314,5 @@ export const resetDemoRoom = spacetimedb.reducer(
   { roomCode: t.string() },
   _ctx => {
     throw new Error('not implemented: reset_demo_room');
-  }
-);
-
-// tick_round(room_id) -> scheduled-reducer path (placeholder; see round_tick
-// table note). Income, energy regen, buff expiry, contest resolution, scoring.
-export const tickRound = spacetimedb.reducer(
-  { name: 'tick_round' },
-  { roomId: t.u32() },
-  _ctx => {
-    throw new Error('not implemented: tick_round');
   }
 );

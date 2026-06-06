@@ -21,6 +21,7 @@ const files = {
   reducersPlayer: read('spacetimedb/src/reducers.player.ts'),
   reducersSpectator: read('spacetimedb/src/reducers.spectator.ts'),
   reducersFlavor: read('spacetimedb/src/reducers.flavor.ts'),
+  reducersTick: read('spacetimedb/src/reducers.tick.ts'),
   serverIndex: read('spacetimedb/src/index.ts'),
   map: read('spacetimedb/src/map.ts'),
   // client
@@ -47,14 +48,13 @@ const GAME_TABLES = [
   'events',
   'taunts',
   'round_results',
-  'round_tick',
 ];
+
+const SCHEMA_TABLES = [...GAME_TABLES, 'round_tick'];
 
 // Reducers still scaffolded as stubs. Implemented reducers are checked below.
 const STUB_REDUCERS = [
   ['reset_demo_room', files.reducersRoom],
-  ['tick_round', files.reducersRoom],
-  ['post_taunt', files.reducersFlavor],
 ];
 
 const SCREENS = ['Join', 'Lobby', 'Match', 'Results', 'Judge'];
@@ -67,9 +67,9 @@ const checks = [
   ['tables.ts keeps the dev sync_state table', files.tables.includes("name: 'sync_state'")],
   ['tables.ts makes sync_state public', files.tables.includes('public: true')],
   ...GAME_TABLES.map(name => [`tables.ts defines ${name}`, files.tables.includes(`name: '${name}'`)]),
-  ['round_tick is a clearly-labeled placeholder', /round_tick/.test(files.tables) && /PLACEHOLDER/i.test(files.tables)],
+  ['reducers.tick.ts defines scheduled round_tick', files.reducersTick.includes("name: 'round_tick'") && files.reducersTick.includes('t.scheduleAt()')],
   ['schema.ts builds the schema() instance', files.schema.includes('schema({') && files.schema.includes('export default spacetimedb')],
-  ['schema.ts registers all game tables', GAME_TABLES.every(name => files.schema.includes(name))],
+  ['schema.ts registers all game tables', SCHEMA_TABLES.every(name => files.schema.includes(name))],
 
   // --- server: dev round-trip kept ---------------------------------------
   ['reducers.dev.ts keeps set_value', files.reducersDev.includes("'set_value'")],
@@ -123,7 +123,7 @@ const checks = [
     'end_round is implemented (writes ranked round_results)',
     files.reducersRoom.includes("name: 'end_round'") &&
       !files.reducersRoom.includes('not implemented: end_round') &&
-      files.reducersRoom.includes('ctx.db.round_results.insert'),
+      files.reducersRoom.includes('finishRound(ctx, room)'),
   ],
   [
     'rematch is implemented (clears the board back to lobby)',
@@ -148,6 +148,19 @@ const checks = [
     files.reducersSpectator.includes("name: 'trigger_spectator_event'") &&
       !files.reducersSpectator.includes('not implemented: trigger_spectator_event') &&
       files.reducersSpectator.includes('ENERGY_COST'),
+  ],
+  [
+    'tick_round is implemented as a scheduled reducer',
+    files.reducersTick.includes("name: 'tick_round'") &&
+      !files.reducersTick.includes('not implemented: tick_round') &&
+      files.reducersTick.includes('ctx.senderAuth.isInternal') &&
+      files.reducersTick.includes('scheduleNextTick'),
+  ],
+  [
+    'post_taunt is implemented (inserts taunts)',
+    files.reducersFlavor.includes("name: 'post_taunt'") &&
+      !files.reducersFlavor.includes('not implemented: post_taunt') &&
+      files.reducersFlavor.includes('ctx.db.taunts.insert'),
   ],
 
   // --- server: barrel + map ----------------------------------------------

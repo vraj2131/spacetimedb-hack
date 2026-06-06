@@ -7,6 +7,7 @@ import {
   mkdirSync,
   copyFileSync,
   symlinkSync,
+  cpSync,
   rmSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -14,18 +15,13 @@ import { join, resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 
 /**
- * Spike 2 — SpacetimeDB 2.4.1 scheduled-table / tick_round syntax.
+ * Spike 2 - SpacetimeDB 2.4.1 scheduled-table / tick_round syntax.
  *
- * The verified syntax lives in spikes/scheduled-tick.reference.ts (committed,
- * not wired into the live module). These tests:
+ * The verified syntax lives in spikes/scheduled-tick.reference.ts. These tests:
  *  1. assert the reference keeps the verified syntax,
- *  2. assert the live repo still ships the NON-FINAL PLACEHOLDER so Dev A knows
- *     to migrate, and
- *  3. when the spacetime CLI + module deps are available (CI, local dev),
- *     copy the reference into a throwaway module and prove it builds + that the
- *     schedule column generates as `scheduled_at` (not `scheduled_at_ms`).
- * Step 3 skips cleanly where the CLI/deps are absent, so the gate stays green
- * for teammates running `npm test` without SpacetimeDB installed.
+ *  2. assert the live repo has migrated away from the placeholder, and
+ *  3. prove the reference builds and generates scheduled_at when the CLI/deps
+ *     are available.
  */
 
 const REFERENCE = 'spikes/scheduled-tick.reference.ts';
@@ -53,16 +49,17 @@ test('Spike 2: reference keeps the verified scheduled-table syntax', () => {
   assert.match(src, /ctx\.senderAuth\.isInternal/);
 });
 
-test('Spike 2: live repo still ships the placeholder (Dev A must migrate)', () => {
+test('Spike 2: live repo uses the scheduled round_tick table', () => {
   const tables = readFileSync('spacetimedb/src/tables.ts', 'utf8');
-  const roomReducers = readFileSync('spacetimedb/src/reducers.room.ts', 'utf8');
-  assert.match(tables, /NON-FINAL PLACEHOLDER/);
-  assert.match(tables, /scheduledAtMs:\s*t\.i64\(\)/);
-  assert.match(roomReducers, /tick_round[\s\S]*\{\s*roomId:\s*t\.u32\(\)\s*\}/);
-  // The placeholder's table() opts must be exactly name+public — i.e. NOT yet
-  // wired as a scheduled table. (A literal `scheduled: () => tickRound` appears
-  // in the placeholder's doc comment, so match the opts object precisely.)
-  assert.match(tables, /table\(\s*\{ name: 'round_tick', public: true \}/);
+  const tickReducers = readFileSync('spacetimedb/src/reducers.tick.ts', 'utf8');
+  const index = readFileSync('spacetimedb/src/index.ts', 'utf8');
+  assert.doesNotMatch(tables, /NON-FINAL PLACEHOLDER/);
+  assert.doesNotMatch(tables, /scheduledAtMs:\s*t\.i64\(\)/);
+  assert.match(tickReducers, /scheduled:\s*\(\):\s*any\s*=>\s*tickRound/);
+  assert.match(tickReducers, /scheduledAt:\s*t\.scheduleAt\(\)/);
+  assert.match(tickReducers, /\{\s*arg:\s*roundTick\.rowType\s*\}/);
+  assert.match(tickReducers, /ctx\.senderAuth\.isInternal/);
+  assert.match(index, /from '\.\/reducers\.tick'/);
 });
 
 test('Spike 2: reference builds + generates scheduled_at column', { skip: buildSkip }, () => {
@@ -72,7 +69,16 @@ test('Spike 2: reference builds + generates scheduled_at column', { skip: buildS
     copyFileSync(REFERENCE, join(dir, 'src', 'index.ts'));
     copyFileSync('spacetimedb/package.json', join(dir, 'package.json'));
     copyFileSync('spacetimedb/tsconfig.json', join(dir, 'tsconfig.json'));
-    symlinkSync(resolve('spacetimedb/node_modules'), join(dir, 'node_modules'));
+    try {
+      symlinkSync(resolve('spacetimedb/node_modules'), join(dir, 'node_modules'));
+    } catch (error) {
+      if (error?.code !== 'EPERM') {
+        throw error;
+      }
+      cpSync(resolve('spacetimedb/node_modules'), join(dir, 'node_modules'), {
+        recursive: true,
+      });
+    }
 
     const build = execSync(`spacetime build --module-path "${dir}" --lint-dir ""`, {
       encoding: 'utf8',

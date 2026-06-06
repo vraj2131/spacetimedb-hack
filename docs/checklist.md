@@ -98,27 +98,27 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 
 ### Slice 4 — Scoring + auto-end
 
-- [x] Scheduled-table / `tick_round` spike verified — _integration into live module pending Slice 4 (see `docs/spike-findings.md`); lazy fallback still valid if needed_
-- [ ] Tile income per tick (street 1, bodega 3)
-- [ ] Ownership bonus at round end
-- [ ] Auto round expiration (~90s)
-- [ ] Manual math matches server results
+- [x] Scheduled-table / `tick_round` spike verified and integrated into the live module
+- [x] Tile income per tick (street 1, bodega 3)
+- [x] Ownership bonus at round end
+- [x] Auto round expiration (~90s)
+- [x] Manual math matches server results
 
 ### Slice 5 — Contest + pickups
 
-- [ ] `contest_tile` reducer (adjacent enemy, shield/spill interaction)
-- [ ] `collect_pickup` reducer
-- [ ] `pickups` table + spawn on map cells
-- [ ] Event rows for major actions
-- [ ] Contest flips exactly once; pickup collects exactly once
+- [x] `contest_tile` reducer (adjacent enemy, shield/spill interaction)
+- [x] `collect_pickup` reducer
+- [x] `pickups` table + spawn on map cells
+- [x] Event rows for major actions
+- [x] Contest flips exactly once; pickup collects exactly once
 
 ### Slice 6 — Spectators
 
-- [ ] `spectator_state` table + energy economy
-- [ ] `trigger_spectator_event` reducer
-- [ ] All 3 powers: `coffee_boost`, `spill_slick`, `deli_shield`
-- [ ] Tick energy regen (+1 every 3s)
-- [ ] Cooldown / energy blocks spam
+- [x] `spectator_state` table + energy economy
+- [x] `trigger_spectator_event` reducer
+- [x] All 3 powers: `coffee_boost`, `spill_slick`, `deli_shield`
+- [x] Tick energy regen (+1 every 3s)
+- [x] Cooldown / energy blocks spam
 - [ ] `EventFeed` + `SpectatorBar` components
 - [ ] Spectator cannot call player-only reducers
 
@@ -138,12 +138,13 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 ### Slice 9 — LLM flavor
 
 - [x] `agents/phrases.json` static fallback
-- [x] `agents/run-flavor.ts` worker — _stub; standalone dry-run passes (4 taunts + 1 recap via static), no STDB wiring yet_
-- [ ] `post_taunt` reducer + `TauntBubble` component
-- [ ] Game fully playable with empty `.env`
+- [x] `agents/run-flavor.ts` worker — _live STDB polling path plus standalone dry-run with static fallback_
+- [x] `post_taunt` reducer
+- [ ] `TauntBubble` component
+- [x] Game fully playable with empty `.env`
 - [x] Groq provider (`llama-3.1-8b-instant`) — _provider stub present; live model smoke test pending (see Open spikes)_
 - [x] Gemini provider (`gemini-2.5-flash-lite`) — _provider stub present; live model smoke test pending (see Open spikes)_
-- [ ] Announcer recap on results screen
+- [x] Announcer recap rows posted after results
 
 ### Slice 10 — Polish
 
@@ -163,8 +164,8 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 - [ ] Contest resolves exactly once; pickups never duplicate
 - [ ] Auto timer ends round; results match server math
 - [ ] Refresh during live round resyncs
-- [ ] Empty LLM keys still produce static flavor
-- [ ] Failed flavor worker does not affect gameplay
+- [x] Empty LLM keys still produce static flavor
+- [x] Failed flavor worker does not affect gameplay
 - [ ] No cross-room state leakage
 - [ ] Maincloud cold-wake tested before demo
 

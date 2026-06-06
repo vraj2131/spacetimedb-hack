@@ -31,7 +31,6 @@ const EXPECTED_REDUCERS = [
   'end_round',
   'rematch',
   'reset_demo_room',
-  'tick_round',
   'register_player',
   'move_player',
   'claim_tile',

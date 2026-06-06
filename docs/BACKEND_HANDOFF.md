@@ -20,6 +20,12 @@ the same shape — but regenerate anyway so your local `src/module_bindings/` is
 
 ## What landed
 
+Current update: full-gameplay backend is now beyond the original MVP handoff.
+`contest_tile`, `collect_pickup`, pickup seeding, `trigger_spectator_event`,
+scheduled `tick_round`, spectator energy regen, server auto-end, and `post_taunt`
+are implemented and integration-tested. The flavor worker has a live polling path
+and still works with empty LLM keys through the static provider.
+
 - **Reducers** (`spacetimedb/src/reducers.{room,player}.ts`): `register_player`,
   `create_room`, `join_room`, `claim_tile`, `end_round`, `rematch`, plus live-round
   guards on `move_player`. (`start_round` was already in.)
@@ -28,8 +34,8 @@ the same shape — but regenerate anyway so your local `src/module_bindings/` is
 - **Integration harness**: real SpacetimeDB tests — `npm run test:integration`.
 - **Maincloud**: `bodega-blitz` is published and live (https://spacetimedb.com/bodega-blitz).
 
-Still stubs (throw `not implemented`): `contest_tile`, `collect_pickup`,
-`trigger_spectator_event`, `post_taunt`, `reset_demo_room`, `tick_round`.
+Remaining explicit backend stub: `reset_demo_room`. `tick_round` is scheduler-internal
+and no longer exposed as a client reducer.
 
 ---
 

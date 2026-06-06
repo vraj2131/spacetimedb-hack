@@ -22,8 +22,10 @@ export {
   endRound,
   rematch,
   resetDemoRoom,
-  tickRound,
 } from './reducers.room';
+
+// Scheduled tick.
+export { tickRound } from './reducers.tick';
 
 // Player actions.
 export {
