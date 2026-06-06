@@ -1,6 +1,6 @@
 import {
-  BOARD_HEIGHT,
-  BOARD_WIDTH,
+  MAP_HEIGHT,
+  MAP_WIDTH,
   type RenderState,
   type RenderTile,
   type RenderTileType,
@@ -10,7 +10,7 @@ function tileTypeAt(x: number, y: number): RenderTileType {
   if (x >= 4 && x <= 7 && y >= 2 && y <= 5) {
     return 'bodega';
   }
-  if ((x === 0 || x === BOARD_WIDTH - 1) && y === Math.floor(BOARD_HEIGHT / 2)) {
+  if ((x === 0 || x === MAP_WIDTH - 1) && y === Math.floor(MAP_HEIGHT / 2)) {
     return 'alley';
   }
   return 'street';
@@ -18,8 +18,8 @@ function tileTypeAt(x: number, y: number): RenderTileType {
 
 function buildMockTiles(): RenderTile[] {
   const tiles: RenderTile[] = [];
-  for (let y = 0; y < BOARD_HEIGHT; y++) {
-    for (let x = 0; x < BOARD_WIDTH; x++) {
+  for (let y = 0; y < MAP_HEIGHT; y++) {
+    for (let x = 0; x < MAP_WIDTH; x++) {
       tiles.push({
         x,
         y,
@@ -36,8 +36,8 @@ function buildMockTiles(): RenderTile[] {
 
 /** Self-demonstrating board fixture for Phase 0 renderer work. */
 export const MOCK_RENDER_STATE: RenderState = {
-  width: BOARD_WIDTH,
-  height: BOARD_HEIGHT,
+  width: MAP_WIDTH,
+  height: MAP_HEIGHT,
   tiles: buildMockTiles(),
   tokens: [
     {

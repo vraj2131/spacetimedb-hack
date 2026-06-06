@@ -50,14 +50,14 @@ export interface RenderState {
   readonly pickups: readonly RenderPickup[];
 }
 
-/** Default 12x8 bodega grid (matches spacetimedb/src/map.ts). */
-export const BOARD_WIDTH = 12;
-export const BOARD_HEIGHT = 8;
+/** Default 28x20 bodega map (must match spacetimedb/src/map.ts). */
+export const MAP_WIDTH = 28;
+export const MAP_HEIGHT = 20;
 
 /** An empty, drawable board — used before a room is joined / round starts. */
 export const EMPTY_RENDER_STATE: RenderState = {
-  width: BOARD_WIDTH,
-  height: BOARD_HEIGHT,
+  width: MAP_WIDTH,
+  height: MAP_HEIGHT,
   tiles: [],
   tokens: [],
   pickups: [],
