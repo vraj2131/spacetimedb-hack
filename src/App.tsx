@@ -1,6 +1,7 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { useSpacetimeDB, useTable } from 'spacetimedb/react';
 import { DbConnection, tables } from './module_bindings';
+import { PhaserPlaceholder } from './components/PhaserPlaceholder';
 
 function App() {
   const [nextValue, setNextValue] = useState('');
@@ -27,8 +28,12 @@ function App() {
     <main className="shell">
       <section className="panel">
         <header>
-          <p className="eyebrow">Bodega Blitz Pipe Check</p>
-          <h1>SpacetimeDB Round Trip</h1>
+          <p className="eyebrow">Bodega Blitz Phase 0</p>
+          <h1>Shared Scaffold Baseline</h1>
+          <p className="intro">
+            This temporary screen proves the team can install dependencies, connect to
+            SpacetimeDB locally, and verify shared state before gameplay work begins.
+          </p>
         </header>
 
         <dl className="status-grid">
@@ -66,6 +71,8 @@ function App() {
             </button>
           </div>
         </form>
+
+        <PhaserPlaceholder />
       </section>
     </main>
   );

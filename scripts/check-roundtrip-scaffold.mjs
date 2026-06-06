@@ -4,7 +4,9 @@ const files = {
   module: readFileSync('spacetimedb/src/index.ts', 'utf8'),
   app: readFileSync('src/App.tsx', 'utf8'),
   main: readFileSync('src/main.tsx', 'utf8'),
-  env: readFileSync('.env.local', 'utf8'),
+  envExample: readFileSync('.env.example', 'utf8'),
+  packageJson: readFileSync('package.json', 'utf8'),
+  readme: readFileSync('README.md', 'utf8'),
 };
 
 const checks = [
@@ -17,8 +19,11 @@ const checks = [
   ['client obtains typed connection from provider state', files.app.includes('getConnection() as DbConnection | null')],
   ['client calls reducers through conn.reducers', files.app.includes('conn?.reducers.setValue')],
   ['client does not use reducer hook', !files.app.includes('useReducer')],
-  ['client defaults to Maincloud URL', files.main.includes("'https://maincloud.spacetimedb.com'")],
-  ['env points Vite at Maincloud', files.env.includes('VITE_SPACETIMEDB_HOST=https://maincloud.spacetimedb.com')],
+  ['client defaults to local SpacetimeDB', files.main.includes("'ws://127.0.0.1:3000'")],
+  ['env example points Vite at local host', files.envExample.includes('VITE_SPACETIMEDB_HOST=ws://127.0.0.1:3000')],
+  ['env example defines database name', files.envExample.includes('VITE_SPACETIMEDB_DB_NAME=bodega-blitz')],
+  ['package installs Phaser', files.packageJson.includes('"phaser"')],
+  ['README explains local-first scaffold phase', files.readme.includes('local-first dev path')],
 ];
 
 const failures = checks.filter(([, passed]) => !passed);
