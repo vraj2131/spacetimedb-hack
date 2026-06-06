@@ -164,7 +164,10 @@ export function MatchScreen({
             {canPlay ? (
               <>
                 <div className="mt-2 rounded-md border border-emerald-400/40 bg-emerald-900/30 px-3 py-2 text-center text-xs font-black uppercase text-emerald-100">
-                  Cash stash: ${viewModel.localCash}
+                  <p>Cash stash: ${viewModel.localCash}</p>
+                  <p className="mt-1 text-[10px] font-semibold normal-case text-emerald-200/90">
+                    Tile income ${viewModel.localTileIncome} + pickups ${viewModel.localPickupCash}
+                  </p>
                 </div>
                 {viewModel.localPlayerEffects.stunned && (
                   <div className="mt-2 rounded-md border border-red-400/50 bg-red-900/40 px-3 py-2 text-center text-xs font-black uppercase text-red-200">

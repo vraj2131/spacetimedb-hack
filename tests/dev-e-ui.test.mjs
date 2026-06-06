@@ -76,12 +76,16 @@ test('player-facing screens expose leave-close flow and claim guidance', () => {
   const match = read('src/screens/Match.tsx');
   const results = read('src/screens/Results.tsx');
 
-  assert.match(lobby, /Close room|Leave room/);
+  assert.match(lobby, /Close room/);
+  assert.match(lobby, /Leave room/);
+  assert.match(lobby, /actionStatusLabel/);
   assert.match(match, /Leave room/);
   assert.match(match, /Claim/);
   assert.match(match, /Contest/);
   assert.match(match, /Collect/);
-  assert.match(results, /Close room|Leave room/);
+  assert.match(results, /Close room/);
+  assert.match(results, /Leave room/);
+  assert.match(results, /actionStatusLabel/);
   assert.doesNotMatch(results, /Back to lobby/);
 });
 

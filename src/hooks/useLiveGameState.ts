@@ -53,7 +53,10 @@ const FRIENDLY_REDUCER_ERRORS: ReadonlyArray<readonly [string, string]> = [
   ['round is not live', 'Round is not live yet.'],
   ['only the host', 'Only the host can do that.'],
   ['leave_room: caller is not in that room', "You're not in that room anymore."],
+  ['leave_room: room not found', 'That room no longer exists.'],
   ['close_room: room is live', 'Finish or leave the live round before closing the room.'],
+  ['close_room: only the host', 'Only the host can close the room.'],
+  ['close_room: room not found', 'That room no longer exists.'],
 ];
 
 function reducerErrorMessage(error: unknown): string {
@@ -148,7 +151,12 @@ export function useLiveGameState(): LiveGameState {
 
   const runAction = useCallback(
     async (action: () => Promise<void>) => {
-      if (!conn || !connected || isSubmitting) {
+      if (!conn || !connected) {
+        setActionError('Not connected to the game server.');
+        return;
+      }
+      if (isSubmitting) {
+        setActionError('Action already in progress.');
         return;
       }
       if (!isReady) {
