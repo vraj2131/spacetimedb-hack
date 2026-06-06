@@ -22,9 +22,10 @@ the same shape — but regenerate anyway so your local `src/module_bindings/` is
 
 Current update: full-gameplay backend is now beyond the original MVP handoff.
 `contest_tile`, `collect_pickup`, pickup seeding, `trigger_spectator_event`,
-scheduled `tick_round`, spectator energy regen, server auto-end, and `post_taunt`
-are implemented and integration-tested. The flavor worker has a live polling path
-and still works with empty LLM keys through the static provider.
+scheduled `tick_round`, spectator energy regen/cooldowns, server auto-end,
+`reset_demo_room`, and `post_taunt` are implemented and integration-tested.
+The flavor worker has a live polling path and still works with empty LLM keys
+through the static provider.
 
 - **Reducers** (`spacetimedb/src/reducers.{room,player}.ts`): `register_player`,
   `create_room`, `join_room`, `claim_tile`, `end_round`, `rematch`, plus live-round
@@ -34,15 +35,16 @@ and still works with empty LLM keys through the static provider.
 - **Integration harness**: real SpacetimeDB tests — `npm run test:integration`.
 - **Maincloud**: `bodega-blitz` is published and live (https://spacetimedb.com/bodega-blitz).
 
-Remaining explicit backend stub: `reset_demo_room`. `tick_round` is scheduler-internal
-and no longer exposed as a client reducer.
+There are no explicit gameplay `not implemented` reducer stubs. `tick_round` is
+scheduler-internal and no longer exposed as a client reducer.
 
 ---
 
 ## Reducer contract (what the client calls)
 
 Flow: `register_player` → `create_room` **or** `join_room` → `start_round` →
-`move_player` / `claim_tile` (live) → `end_round` → `rematch`.
+`move_player` / `claim_tile` / `contest_tile` / `collect_pickup` (live) →
+`end_round` → `rematch`.
 
 | Reducer | Args (camelCase) | Guards / behavior |
 |---|---|---|
@@ -50,12 +52,16 @@ Flow: `register_player` → `create_room` **or** `join_room` → `start_round` �
 | `createRoom` | `{}` | caller registered & not in a room; makes a 6-char uppercase code; room `state='lobby'`, host = caller; caller joins it. |
 | `joinRoom` | `{ roomCode }` | normalizes code (trim+upper); **players** gated by `live` state + 10-seat cap; **spectators may join lobby/live/results** (to watch). |
 | `startRound` | `{ roomId }` | host only, lobby only; seeds the 28×20 board; spawns `player`-role at `SPAWN_POINTS`; `state='live'`, sets `startsAtMs`/`endsAtMs` (+90s). |
-| `movePlayer` | `{ direction }` | `direction` ∈ `up\|down\|left\|right`; player-role + live only; one cell; rejects off-map / alley. |
+| `movePlayer` | `{ direction }` | `direction` ∈ `up\|down\|left\|right`; player-role + live only; one cell; rejects off-map / alley; normal cooldown 500ms, coffee cooldown 250ms. |
 | `claimTile` | `{ tileId }` | player-role + live; tile must be in your room, non-alley, **Manhattan-adjacent** to you; sets `ownerPlayerId`; writes a `claim` event. |
+| `contestTile` | `{ tileId }` | player-role + live; adjacent enemy-owned non-alley tile; shield blocks; active contests reject; sets `contestedBy`/`contestedUntilMs`; `tick_round` flips ownership after expiry. |
+| `collectPickup` | `{ pickupId }` | player-role + live; active pickup in your room on your current cell; one-time; cash updates totals, coffee boosts speed, shield protects the current tile. |
+| `triggerSpectatorEvent` | `{ eventType, targetPlayerId?, targetTileId? }` | spectator-role + live; `coffee_boost` targets a player, `spill_slick`/`deli_shield` target tiles; energy cost + 4s cooldown. |
 | `endRound` | `{ roomId }` | host only, live only; writes ranked `round_results`; `state='results'`. |
 | `rematch` | `{ roomId }` | host only, results only; clears tiles/player_state/events/round_results/pickups; `state='lobby'`, `roundNumber++`. |
 | `leaveRoom` | `{ roomId }` | caller must be in the room; removes caller's `player_state` or `spectator_state`; sets `player.roomId = 0`; transfers host to next connected player by join order if host leaves; deletes room if empty. |
 | `closeRoom` | `{ roomId }` | host only; **rejects if `state='live'`**; rehomes all participants (`roomId = 0`), deletes room-scoped rows, deletes room. |
+| `resetDemoRoom` | `{ roomCode }` | host only; normalizes code; hard-deletes live/results/lobby room-scoped rows and rehomes players to `roomId = 0`. |
 
 **Calling convention** (matches `DevSync.tsx`): `conn.reducers.registerPlayer({ name, role })`.
 The call returns a `Promise<void>` that **resolves after commit** and **rejects if the
@@ -103,10 +109,11 @@ connections, not the CLI.
 - Iso board + 28×20 camera already render against the mock. Swap the mock for the live `RenderState` (from Dev E's adapter) and emit `tile:click` carrying `(x,y)` so the controller can resolve the tile id.
 
 **Dev C — backend #2 / scoring**
-- `contest_tile`, `collect_pickup`, `pickups` spawn + table; per-tick tile income; auto round-expiration. Decide scheduled `tick_round` (spike verified, see `docs/spike-findings.md`) vs the lazy fallback. Schema changes go through Dev A.
+- Gameplay hardening is landed: timed contests, fixed pickups, explicit pickup collection,
+  single scheduled tick stream, auto-end, spectator regen/cooldown, and reset. Schema changes still go through Dev A.
 
 **Dev D — spectator / flavor / judge**
-- `trigger_spectator_event` (the 3 powers + energy/cooldown), `spectator_state`. **Note:** the pigeon power is the thing that should set `player_state.pigeonBlocked = true`; `claim_tile` already consumes it (clears + fizzles, since atomic reducers can't both clear and throw). `post_taunt` + `TauntBubble`; Judge screen.
+- Spectator reducer powers are live. Remaining frontend polish: `EventFeed`, `TauntBubble`, Judge screen, and smoke coverage for the projector flow.
 
 ---
 

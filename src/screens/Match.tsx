@@ -14,6 +14,7 @@ type MatchScreenProps = {
 };
 
 type TileActionMode = 'claim' | 'contest';
+type SpectatorTileTarget = 'spill_slick' | 'deli_shield';
 
 const overlayButtonClass =
   'rounded-md border border-yellow-300/40 bg-slate-900/90 px-3 py-2 text-xs font-black uppercase tracking-wide text-yellow-100 transition hover:border-yellow-200/70 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50';
@@ -55,7 +56,8 @@ export function MatchScreen({
   localPlayerId,
 }: MatchScreenProps) {
   const canPlay = !viewModel.isSpectator && viewModel.roomState === 'live';
-  const [spectatorTarget, setSpectatorTarget] = useState<string | null>(null);
+  const [spectatorTarget, setSpectatorTarget] = useState<SpectatorTileTarget | null>(null);
+  const [showBoostTargets, setShowBoostTargets] = useState(false);
   const [tileActionMode, setTileActionMode] = useState<TileActionMode>('claim');
 
   const localToken = renderState.tokens.find(token => token.playerId === localPlayerId);
@@ -236,7 +238,15 @@ export function MatchScreen({
                       disabled={!control.enabled}
                       onClick={() => {
                         if (!eventType) return;
-                        setSpectatorTarget(prev => (prev === eventType ? null : eventType));
+                        if (eventType === 'coffee_boost') {
+                          setSpectatorTarget(null);
+                          setShowBoostTargets(prev => !prev);
+                          return;
+                        }
+                        setShowBoostTargets(false);
+                        setSpectatorTarget(prev =>
+                          prev === eventType ? null : (eventType as SpectatorTileTarget)
+                        );
                       }}
                     >
                       {control.label}
@@ -244,6 +254,21 @@ export function MatchScreen({
                     </button>
                   );
                 })}
+                {showBoostTargets
+                  ? viewModel.liveStandings.map(entry => (
+                      <button
+                        key={entry.id}
+                        type="button"
+                        className="rounded-md border border-cyan-300/40 bg-slate-900/80 px-3 py-2 text-center text-xs font-black uppercase tracking-wide text-cyan-100 transition hover:border-cyan-200/70 hover:bg-slate-800"
+                        onClick={() => {
+                          actions.onSpectatorEvent('coffee_boost', Number(entry.id), undefined);
+                          setShowBoostTargets(false);
+                        }}
+                      >
+                        {entry.name}
+                      </button>
+                    ))
+                  : null}
               </div>
             )}
           </div>

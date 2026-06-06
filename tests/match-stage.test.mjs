@@ -36,6 +36,8 @@ test('Match screen uses fullscreen GameStage instead of BoardShell', () => {
   assert.match(match, /actions\.onCollectPickupAt/);
   assert.match(match, /tileActionMode/);
   assert.match(match, /handleCollect/);
+  assert.match(match, /liveStandings\.map\(entry/);
+  assert.match(match, /actions\.onSpectatorEvent\('coffee_boost', Number\(entry\.id\), undefined\)/);
   assert.match(match, /Leave room/);
 });
 

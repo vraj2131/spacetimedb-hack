@@ -21,6 +21,8 @@ const STEP: Record<string, { dx: number; dy: number }> = {
 
 /** Player token colors, cycled by registration order. */
 const PLAYER_COLORS = ['#0f766e', '#dc2626', '#ca8a04', '#2563eb'];
+const NORMAL_MOVE_COOLDOWN_MS = 500n;
+const BOOSTED_MOVE_COOLDOWN_MS = 250n;
 
 // register_player(name, role) -> create player; reject empty name.
 export const registerPlayer = spacetimedb.reducer(
@@ -91,6 +93,13 @@ export const movePlayer = spacetimedb.reducer(
 
     // Speed boost: track whether the player has an active speed buff.
     const boosted = toNumberMs(state.speedUntilMs) > Number(nowMs);
+    const moveCooldownMs = boosted ? BOOSTED_MOVE_COOLDOWN_MS : NORMAL_MOVE_COOLDOWN_MS;
+    if (
+      toNumberMs(state.lastMoveAtMs) > 0 &&
+      nowMs - BigInt(toNumberMs(state.lastMoveAtMs)) < moveCooldownMs
+    ) {
+      throw new SenderError('move_player: cooldown active');
+    }
 
     const targetX = gridCoord(state.x) + step.dx;
     const targetY = gridCoord(state.y) + step.dy;
@@ -116,8 +125,6 @@ export const movePlayer = spacetimedb.reducer(
       lastMoveAtMs: nowMs,
     });
 
-    // --- Post-move side-effects ---
-
     // Spill stun: if the destination tile has an active spill, stun the player.
     const destTile = [...ctx.db.tiles.roomId.filter(player.roomId)].find(
       t => gridCoord(t.x) === targetX && gridCoord(t.y) === targetY
@@ -130,49 +137,6 @@ export const movePlayer = spacetimedb.reducer(
       });
     }
 
-    // Auto-collect: if an active pickup exists at the new position, collect it.
-    const pickup = [...ctx.db.pickups.roomId.filter(player.roomId)].find(
-      p => p.active && gridCoord(p.x) === targetX && gridCoord(p.y) === targetY
-    );
-    if (pickup) {
-      const freshState = ctx.db.player_state.playerId.find(player.id)!;
-
-      if (pickup.pickupType === 'cash') {
-        ctx.db.player_state.playerId.update({
-          ...freshState,
-          cash: freshState.cash + pickup.value,
-          pickupCashTotal: freshState.pickupCashTotal + pickup.value,
-        });
-      } else if (pickup.pickupType === 'coffee') {
-        ctx.db.player_state.playerId.update({
-          ...freshState,
-          speedUntilMs: nowMs + COFFEE_BOOST_MS,
-        });
-      } else if (pickup.pickupType === 'shield') {
-        // Shield the destination tile.
-        if (destTile) {
-          // Re-read tile in case it was updated by spill check above (it wasn't, but be safe).
-          const freshTile = ctx.db.tiles.id.find(destTile.id)!;
-          ctx.db.tiles.id.update({ ...freshTile, shieldUntilMs: nowMs + SHIELD_DURATION_MS });
-        }
-      }
-
-      // Deactivate the pickup.
-      ctx.db.pickups.id.update({ ...pickup, active: false });
-
-      // Insert pickup event.
-      ctx.db.events.insert({
-        id: 0n, // auto-increment
-        roomId: player.roomId,
-        eventType: 'pickup',
-        sourcePlayerId: player.id,
-        targetPlayerId: undefined,
-        targetTileId: undefined,
-        message: `${player.name} collected ${pickup.pickupType}`,
-        createdAtMs: nowMs,
-        expiresAtMs: nowMs + PICKUP_EVENT_TTL_MS,
-      });
-    }
   }
 );
 
@@ -198,6 +162,8 @@ const CLAIM_EVENT_TTL_MS = 30_000n;
 
 /** Contest-event lifetime in the feed (ms). */
 const CONTEST_EVENT_TTL_MS = 30_000n;
+const CONTEST_DURATION_MS = 3_000n;
+const SPILL_CONTEST_EXTRA_MS = 3_000n;
 
 // claim_tile(tile_id) -> player only; adjacent only; set ownership; append event.
 export const claimTile = spacetimedb.reducer(
@@ -270,7 +236,7 @@ export const claimTile = spacetimedb.reducer(
   }
 );
 
-// contest_tile(tile_id) -> player only; adjacent enemy tile; instant takeover.
+// contest_tile(tile_id) -> player only; adjacent enemy tile; delayed takeover.
 export const contestTile = spacetimedb.reducer(
   { name: 'contest_tile' },
   { tileId: t.u32() },
@@ -300,6 +266,9 @@ export const contestTile = spacetimedb.reducer(
     if (tile.roomId !== player.roomId) {
       throw new SenderError('contest_tile: tile belongs to another room');
     }
+    if (tile.tileType === 'alley') {
+      throw new SenderError('contest_tile: cannot contest an alley tile');
+    }
 
     // Tile must be owned by a different player.
     if (tile.ownerPlayerId === undefined || tile.ownerPlayerId === null) {
@@ -323,15 +292,20 @@ export const contestTile = spacetimedb.reducer(
     if (toNumberMs(tile.shieldUntilMs) > toNumberMs(nowMs)) {
       throw new SenderError('contest_tile: tile is shielded');
     }
+    if (tile.contestedBy !== undefined && tile.contestedBy !== null) {
+      throw new SenderError('contest_tile: tile is already contested');
+    }
 
     const previousOwner = tile.ownerPlayerId;
+    const contestDurationMs =
+      toNumberMs(tile.spillUntilMs) > toNumberMs(nowMs)
+        ? CONTEST_DURATION_MS + SPILL_CONTEST_EXTRA_MS
+        : CONTEST_DURATION_MS;
 
-    // Instant takeover: set ownership, clear contest fields.
     ctx.db.tiles.id.update({
       ...tile,
-      ownerPlayerId: player.id,
-      contestedBy: undefined,
-      contestedUntilMs: 0n,
+      contestedBy: player.id,
+      contestedUntilMs: nowMs + contestDurationMs,
     });
 
     // Update caller's last contest timestamp.

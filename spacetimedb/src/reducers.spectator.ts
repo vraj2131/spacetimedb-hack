@@ -12,6 +12,8 @@ const SPILL_DURATION_MS = 8_000n;
 const SHIELD_DURATION_MS = 12_000n;
 const COFFEE_BOOST_MS = 8_000n;
 const SPECTATOR_EVENT_TTL_MS = 30_000n;
+const SPECTATOR_POWER_COOLDOWN_MS = 4_000n;
+const SPILL_CONTEST_EXTRA_MS = 3_000n;
 
 // trigger_spectator_event(event_type, target_player_id?, target_tile_id?)
 //   -> spectator only; live; energy + cooldown check; apply effect; deduct energy.
@@ -60,6 +62,13 @@ export const triggerSpectatorEvent = spacetimedb.reducer(
     }
 
     const nowMs = timestampMs(ctx);
+    const lastActionAtMs = BigInt(spectatorState.lastActionAtMs);
+    if (
+      lastActionAtMs !== 0n &&
+      nowMs - lastActionAtMs < SPECTATOR_POWER_COOLDOWN_MS
+    ) {
+      throw new SenderError('trigger_spectator_event: cooldown active');
+    }
     let message = '';
 
     if (eventType === 'spill_slick') {
@@ -71,7 +80,14 @@ export const triggerSpectatorEvent = spacetimedb.reducer(
       if (!tile || tile.roomId !== room.id) {
         throw new SenderError('trigger_spectator_event: target tile not found in room');
       }
-      ctx.db.tiles.id.update({ ...tile, spillUntilMs: nowMs + SPILL_DURATION_MS });
+      ctx.db.tiles.id.update({
+        ...tile,
+        spillUntilMs: nowMs + SPILL_DURATION_MS,
+        contestedUntilMs:
+          tile.contestedBy !== undefined && tile.contestedBy !== null
+            ? BigInt(tile.contestedUntilMs) + SPILL_CONTEST_EXTRA_MS
+            : tile.contestedUntilMs,
+      });
       message = `Spectator ${caller.name} spilled slick on (${tile.x},${tile.y})`;
     } else if (eventType === 'deli_shield') {
       // --- deli_shield: requires targetTileId, tile must exist in room ---

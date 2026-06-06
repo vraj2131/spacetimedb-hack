@@ -119,7 +119,7 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 - [x] `collect_pickup` reducer
 - [x] `pickups` table + spawn on map cells
 - [x] Event rows for major actions
-- [x] Contest flips exactly once; pickup collects exactly once
+- [x] Contest resolves exactly once; pickup collects exactly once
 
 ### Slice 6 — Spectators
 
@@ -169,9 +169,9 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 ## Acceptance tests (ship criteria)
 
 - [ ] 4 players join one room; movement + claim stay consistent
-- [ ] Spectators join in lobby and live; 3 powers work with energy/cooldown
-- [ ] Contest resolves exactly once; pickups never duplicate
-- [ ] Auto timer ends round; results match server math
+- [x] Spectators join in lobby and live; 3 powers work with energy/cooldown
+- [x] Contest resolves exactly once; pickups never duplicate
+- [x] Auto timer ends round; results match server math
 - [ ] Refresh during live round resyncs
 - [x] Empty LLM keys still produce static flavor
 - [x] Failed flavor worker does not affect gameplay

@@ -5,6 +5,7 @@ import {
   MAP_HEIGHT,
   SPAWN_CORNERS,
   SPAWN_POINTS,
+  PICKUP_SPAWNS,
   MAX_SPAWN_SEATS,
   tileTypeAt,
   incomeForTileType,
@@ -33,6 +34,21 @@ test('SPAWN_POINTS gives MAX_SPAWN_SEATS in-bounds seats, none on alley', () => 
       tileTypeAt(p.x, p.y),
       'alley',
       `spawn (${p.x},${p.y}) must not be on an alley tile`
+    );
+  }
+});
+
+test('PICKUP_SPAWNS gives 10 fixed unique non-alley cells', () => {
+  assert.equal(PICKUP_SPAWNS.length, 10);
+  assert.deepEqual(PICKUP_SPAWNS[0], { x: 2, y: 1 });
+  assert.equal(new Set(PICKUP_SPAWNS.map((p) => `${p.x},${p.y}`)).size, 10);
+  for (const p of PICKUP_SPAWNS) {
+    assert.ok(p.x >= 0 && p.x < MAP_WIDTH, `pickup x in range: ${p.x}`);
+    assert.ok(p.y >= 0 && p.y < MAP_HEIGHT, `pickup y in range: ${p.y}`);
+    assert.notEqual(
+      tileTypeAt(p.x, p.y),
+      'alley',
+      `pickup (${p.x},${p.y}) must not be on an alley tile`
     );
   }
 });

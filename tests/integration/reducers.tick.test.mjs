@@ -109,6 +109,45 @@ test('scheduled tick grants tile income for owned tiles', { skip }, async () => 
   assert.ok(state.cash >= 1);
 });
 
+test('round_tick stays single-row while live and clears on finish/rematch/close', { skip }, async () => {
+  if (skip) return;
+  const { host, room } = await liveRoomWithSpectator();
+
+  await waitFor(
+    () => [...host.conn.db.round_tick.iter()].filter((row) => row.roomId === room.id).length === 1,
+    'one scheduled tick row after start'
+  );
+  await new Promise((resolve) => setTimeout(resolve, 2_500));
+  assert.equal(
+    [...host.conn.db.round_tick.iter()].filter((row) => row.roomId === room.id).length,
+    1
+  );
+
+  await host.conn.reducers.endRound({ roomId: room.id });
+  await waitFor(
+    () => [...host.conn.db.round_tick.iter()].filter((row) => row.roomId === room.id).length === 0,
+    'tick rows clear after finish'
+  );
+
+  await host.conn.reducers.rematch({ roomId: room.id });
+  assert.equal(
+    [...host.conn.db.round_tick.iter()].filter((row) => row.roomId === room.id).length,
+    0
+  );
+
+  await host.conn.reducers.startRound({ roomId: room.id });
+  await waitFor(
+    () => [...host.conn.db.round_tick.iter()].filter((row) => row.roomId === room.id).length === 1,
+    'one scheduled tick row after restart'
+  );
+  await host.conn.reducers.endRound({ roomId: room.id });
+  await host.conn.reducers.closeRoom({ roomId: room.id });
+  await waitFor(
+    () => [...host.conn.db.round_tick.iter()].filter((row) => row.roomId === room.id).length === 0,
+    'tick rows clear after close'
+  );
+});
+
 test('scheduled tick regenerates spectator energy after spending it', { skip }, async () => {
   if (skip) return;
   const { spectator, room, spectatorPlayer } = await liveRoomWithSpectator();

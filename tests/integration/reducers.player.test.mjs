@@ -44,6 +44,10 @@ async function newPlayer() {
   return handle;
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function playerOf(conn, identity) {
   return [...conn.db.players.iter()].find(
     (p) => hex(p.identity) === hex(identity)
@@ -95,6 +99,28 @@ test('move_player steps one cell in a live round', { skip }, async () => {
   await host.conn.reducers.movePlayer({ direction: 'right' });
   const moved = host.conn.db.player_state.playerId.find(playerId);
   assert.deepEqual([moved.x, moved.y], [2, 1]);
+});
+
+test('move_player enforces normal and boosted cooldowns', { skip }, async () => {
+  if (skip) return;
+  const { host, room, playerId } = await startedRound();
+
+  await host.conn.reducers.movePlayer({ direction: 'right' });
+  await assert.rejects(host.conn.reducers.movePlayer({ direction: 'right' }));
+
+  const watcher = await newPlayer();
+  await watcher.conn.reducers.registerPlayer({ name: 'Watcher', role: 'spectator' });
+  await watcher.conn.reducers.joinRoom({ roomCode: room.code });
+  await watcher.conn.reducers.triggerSpectatorEvent({
+    eventType: 'coffee_boost',
+    targetPlayerId: playerId,
+    targetTileId: undefined,
+  });
+
+  await sleep(300);
+  await host.conn.reducers.movePlayer({ direction: 'right' });
+  const moved = host.conn.db.player_state.playerId.find(playerId);
+  assert.deepEqual([moved.x, moved.y], [3, 1]);
 });
 
 test('claim_tile claims an adjacent tile and writes an event', { skip }, async () => {

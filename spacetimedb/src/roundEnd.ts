@@ -63,5 +63,6 @@ export function finishRound(ctx: ReducerCtx, room: any): void {
     });
   }
 
+  ctx.db.round_tick.roomId.delete(currentRoom.id);
   ctx.db.rooms.id.update({ ...currentRoom, state: 'results' });
 }
