@@ -350,6 +350,7 @@
       "w": 768,
       "h": 768
     },
-    "scale": "1"
+    "scale": "1",
+    "source": "renders/{frame_key}.png"
   }
 }

@@ -20,6 +20,8 @@ SOURCE_ZIP = ROOT / "_source" / "kenney.zip"
 RENDERS_DIR = ROOT / "_source" / "renders"
 OUT_PNG = ROOT / "game.png"
 OUT_JSON = ROOT / "game.json"
+EXISTING_ATLAS_PNG = ROOT / "game.png"
+EXISTING_ATLAS_JSON = ROOT / "game.json"
 
 FRAME_W = 128
 FRAME_H = 256
@@ -66,6 +68,14 @@ def load_kenney_image(zf: zipfile.ZipFile, path: str) -> Image.Image:
 def load_render_image(frame_key: str) -> Image.Image:
     path = RENDERS_DIR / f"{frame_key}.png"
     return Image.open(path).convert("RGBA")
+
+
+def load_existing_atlas_frame(frame_key: str) -> Image.Image:
+    atlas = Image.open(EXISTING_ATLAS_PNG).convert("RGBA")
+    atlas_json = json.loads(EXISTING_ATLAS_JSON.read_text(encoding="utf-8"))
+    frame = atlas_json["frames"][frame_key]["frame"]
+    box = (frame["x"], frame["y"], frame["x"] + frame["w"], frame["y"] + frame["h"])
+    return atlas.crop(box)
 
 
 def tint_orange(img: Image.Image) -> Image.Image:
@@ -129,15 +139,21 @@ def pack_frames(images: dict[str, Image.Image], source_label: str) -> None:
 
 def load_render_images() -> dict[str, Image.Image]:
     images: dict[str, Image.Image] = {}
-    with zipfile.ZipFile(SOURCE_ZIP) as zf:
+    zf: zipfile.ZipFile | None = zipfile.ZipFile(SOURCE_ZIP) if SOURCE_ZIP.exists() else None
+    try:
         for key, kenney_path in FRAMES.items():
             if key in RENDER_FRAME_KEYS:
                 images[key] = load_render_image(key)
-            else:
+            elif zf is not None:
                 img = load_kenney_image(zf, kenney_path)
                 if key == "bodega_cat":
                     img = tint_orange(img)
                 images[key] = img
+            else:
+                images[key] = load_existing_atlas_frame(key)
+    finally:
+        if zf is not None:
+            zf.close()
     return images
 
 
@@ -154,9 +170,9 @@ def load_kenney_images() -> dict[str, Image.Image]:
 
 def main() -> None:
     if has_complete_render_set():
-        if not SOURCE_ZIP.exists():
+        if not SOURCE_ZIP.exists() and not (EXISTING_ATLAS_PNG.exists() and EXISTING_ATLAS_JSON.exists()):
             raise SystemExit(
-                f"Missing {SOURCE_ZIP}. Kenney zip is still needed for optional carryover frames."
+                f"Missing {SOURCE_ZIP} and existing atlas files. Optional carryover frames need one source."
             )
         pack_frames(load_render_images(), "renders/{frame_key}.png")
         return

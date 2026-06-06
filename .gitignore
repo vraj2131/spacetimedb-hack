@@ -16,6 +16,7 @@ src/module_bindings/
 skills-lock.json
 
 __pycache__/
+.vite-*.log
 public/assets/_source/*.zip
 public/assets/_source/extracted/
 public/assets/_source/renders/

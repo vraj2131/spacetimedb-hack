@@ -16,3 +16,7 @@ python public/assets/_source/pack_atlas.py
 
 When all required render PNGs are present, the packer uses those. Otherwise it
 falls back to `kenney.zip`.
+
+If the required render PNGs are present and `kenney.zip` is absent, optional
+carryover frames are cropped from the existing committed `game.png` /
+`game.json` atlas.

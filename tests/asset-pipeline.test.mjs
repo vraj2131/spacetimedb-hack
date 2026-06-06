@@ -31,6 +31,8 @@ test('packer documents and supports MegaKit render PNG inputs', () => {
   const packer = read('public/assets/_source/pack_atlas.py');
 
   assert.match(packer, /RENDERS_DIR/);
+  assert.match(packer, /EXISTING_ATLAS_PNG/);
+  assert.match(packer, /load_existing_atlas_frame/);
   assert.match(packer, /load_render_image/);
   assert.match(packer, /RENDER_FRAME_KEYS/);
   assert.match(packer, /renders\/\{frame_key\}\.png/);
