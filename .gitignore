@@ -15,3 +15,10 @@ src/module_bindings/
 
 skills-lock.json
 
+# macOS finder cruft
+.DS_Store
+
+# Source art archives — download/keep locally, not committed (see ASSETS.md)
+public/assets/*.zip
+public/assets/_source/*.zip
+
