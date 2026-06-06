@@ -1,0 +1,13 @@
+{
+  "name": "bodega-blitz-flavor",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx run-flavor.ts",
+    "dry-run": "tsx run-flavor.ts --dry-run"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "~5.6.2"
+  }
+}

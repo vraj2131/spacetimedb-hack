@@ -1,0 +1,59 @@
+{
+  "claim": [
+    "That's my block now, buddy.",
+    "Another tile for the bodega empire.",
+    "You snooze on this corner, you lose.",
+    "Marked. Mopped. Mine.",
+    "Fresh claim — smells like victory and chopped cheese.",
+    "This tile pays rent to ME now.",
+    "Corner secured. Don't touch my awning.",
+    "Claimed faster than a MetroCard swipe."
+  ],
+  "contest": [
+    "Oh we're fighting for THIS tile? Bet.",
+    "Contest started — bring your deli energy.",
+    "You want this block? Talk to the cat.",
+    "Territory dispute! Popcorn time.",
+    "Shield or spill won't save you forever.",
+    "That's a hostile takeover, NYC style.",
+    "Contested! Somebody call the block association.",
+    "Tile war — no refunds, no remorse."
+  ],
+  "pickup": [
+    "Cash on the floor? In THIS economy?",
+    "Coffee pickup — now you move like a express train.",
+    "Shield up — deli shutters down, drama out.",
+    "Free money! Well, bodega money.",
+    "Grabbed that pickup before the pigeons did.",
+    "Receipt says: you ate today.",
+    "Buff acquired. The cat approves.",
+    "Found loot between the chips and the plantain chips."
+  ],
+  "spectator": [
+    "Spectator chaos incoming — buckle up.",
+    "Someone spilled the block! Classic.",
+    "Deli shield deployed — respect the awning.",
+    "Coffee boost! They're zooming like late for work.",
+    "The crowd is cooking now.",
+    "Energy spent, drama delivered.",
+    "Spectators don't play fair and neither do we.",
+    "Chaos tax collected from the peanut gallery."
+  ],
+  "generic": [
+    "Bodega Blitz — where every block is a business plan.",
+    "The cat saw everything. The cat remembers.",
+    "NYC turf war, 90 seconds, no lawyers.",
+    "Run the block, not your mouth.",
+    "If you ain't claiming, you ain't playing.",
+    "Deli hours: always open, always violent.",
+    "This round brought to you by corner stores.",
+    "Meow means move."
+  ],
+  "recap_templates": [
+    "{winner} ran the block with {score} points. The cat is impressed.",
+    "Round over — {winner} tops the board at {score}. Deli closed, drama open.",
+    "{winner} wins at {score}. Everyone else owes them a chopped cheese.",
+    "Final tally: {winner} on {score}. The bodega remembers.",
+    "{winner} took the turf ({score} pts). Pigeons scatter in shame."
+  ]
+}
