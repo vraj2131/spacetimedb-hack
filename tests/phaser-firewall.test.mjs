@@ -55,3 +55,12 @@ test('PhaserGame exposes camera mode without changing RenderState', () => {
   const renderState = readFileSync('src/renderState.ts', 'utf8');
   assert.doesNotMatch(renderState, /gridW|gridH|localPlayerId|cameraMode/);
 });
+
+test('BoardScene preserves user pan and zoom across live RenderState updates', () => {
+  const boardScene = readFileSync('src/game/scenes/BoardScene.ts', 'utf8');
+
+  assert.match(boardScene, /userAdjustedOverview/);
+  assert.match(boardScene, /followDetached/);
+  assert.match(boardScene, /configureCamera\(state, forceCameraReset\)/);
+  assert.match(boardScene, /startFollow/);
+});

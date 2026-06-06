@@ -1,5 +1,6 @@
 import { ScheduleAt } from 'spacetimedb';
 import { table, t } from 'spacetimedb/server';
+import { applyRoomTileIncome } from './income';
 import { timestampMs } from './time';
 import { finishRound } from './roundEnd';
 
@@ -80,35 +81,6 @@ function resolveExpiredContests(ctx: ReducerCtx, roomId: number, nowMs: bigint):
   }
 }
 
-function applyTileIncome(ctx: ReducerCtx, roomId: number): void {
-  const incomeByPlayer = new Map<number, number>();
-  for (const tile of ctx.db.tiles.roomId.filter(roomId)) {
-    if (tile.ownerPlayerId === undefined || tile.ownerPlayerId === null) {
-      continue;
-    }
-    const income = Number(tile.incomeValue);
-    if (income <= 0) {
-      continue;
-    }
-    incomeByPlayer.set(
-      tile.ownerPlayerId,
-      (incomeByPlayer.get(tile.ownerPlayerId) ?? 0) + income
-    );
-  }
-
-  for (const [playerId, income] of incomeByPlayer) {
-    const state = ctx.db.player_state.playerId.find(playerId);
-    if (!state || state.roomId !== roomId) {
-      continue;
-    }
-    ctx.db.player_state.playerId.update({
-      ...state,
-      cash: state.cash + income,
-      tileIncomeTotal: state.tileIncomeTotal + income,
-    });
-  }
-}
-
 function regenerateSpectatorEnergy(ctx: ReducerCtx, roomId: number, nowMs: bigint): void {
   for (const state of ctx.db.spectator_state.roomId.filter(roomId)) {
     if (state.energy >= MAX_SPECTATOR_ENERGY) {
@@ -142,11 +114,22 @@ export function registerTickReducer(spacetimedb: any): void {
 
       const nowMs = timestampMs(ctx);
       resolveExpiredContests(ctx, room.id, nowMs);
-      applyTileIncome(ctx, room.id);
       regenerateSpectatorEnergy(ctx, room.id, nowMs);
 
-      if (toNumberMs(room.endsAtMs) > 0 && nowMs >= BigInt(toNumberMs(room.endsAtMs))) {
-        finishRound(ctx, room);
+      const refreshedRoom = ctx.db.rooms.id.find(room.id);
+      if (!refreshedRoom || refreshedRoom.state !== 'live') {
+        return;
+      }
+
+      applyRoomTileIncome(ctx, refreshedRoom, nowMs);
+
+      const roomAfterIncome = ctx.db.rooms.id.find(room.id);
+      if (!roomAfterIncome || roomAfterIncome.state !== 'live') {
+        return;
+      }
+
+      if (toNumberMs(roomAfterIncome.endsAtMs) > 0 && nowMs >= BigInt(toNumberMs(roomAfterIncome.endsAtMs))) {
+        finishRound(ctx, roomAfterIncome);
         return;
       }
     }

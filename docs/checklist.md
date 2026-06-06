@@ -2,7 +2,7 @@
 
 Living progress tracker for the project. Check items off as they land (`- [x]`). Leave pending items unchecked (`- [ ]`).
 
-Last updated: June 6, 2026 (Room lifecycle: leave/close reducers + UI wiring with visible errors; live standings aligned to server income fields.)
+Last updated: June 6, 2026 (Slice 2 cutover: game schema replaces `sync_state`; DevSync uses `rooms`/`players`.)
 
 ---
 
@@ -79,7 +79,7 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 
 ### Slice 2 — Room sync
 
-- [ ] Game schema replaces `sync_state` (`rooms`, `players`, `player_state`, `tiles`, …) — _tables scaffolded alongside `sync_state`; `sync_state` still drives the dev round-trip_
+- [x] Game schema replaces `sync_state` (`rooms`, `players`, `player_state`, `tiles`, …) — _DevSync subscribes to `rooms`/`players`; `sync_state` + `set_value` removed_
 - [x] `register_player`, `create_room`, `join_room`, `start_round` reducers — _implemented + integration-tested on `backend-mvp-reducers`_
 - [x] `spacetimedb/src/map.ts` — 28×20 layout + spawn points — _v1 NYC tile types (street/bodega/alley); pickup spawns still empty_
 - [x] Join screen (nickname, role, optional room code) — _live reducers via `useLiveGameState`_
@@ -103,7 +103,7 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 - [x] Leave + Close buttons on Lobby, Match, Results
 - [x] Action errors visible on Lobby and Results (not just Match)
 - [x] Auto-route to Join when `player.roomId === 0`
-- [ ] Room leave/close browser smoke — _see `docs/M1_SMOKE_TEST.md` section 9_
+- [x] Room leave/close automated smoke — _`npm run smoke:leave-close` against local `bodega-blitz`; manual browser steps in `docs/M1_SMOKE_TEST.md` section 9_
 
 ### Slice 4 — Scoring + auto-end
 

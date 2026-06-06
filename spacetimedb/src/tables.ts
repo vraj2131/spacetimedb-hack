@@ -12,22 +12,9 @@ import { table, t } from 'spacetimedb/server';
  * enforced by `roomId` filtering on every subscription and reducer.
  *
  * Blessed by Dev A (Wave 1): all 10 game tables match the brief field-for-field;
- * `round_tick` stays a documented placeholder until the scheduler spike, and the
- * dev `sync_state` table is removed at client cutover. Treat as the frozen
- * contract — coordinate schema changes before editing.
+ * `round_tick` stays a documented placeholder until the scheduler spike.
+ * Treat as the frozen contract — coordinate schema changes before editing.
  */
-
-// --- Scaffold round-trip proof (kept until the first gameplay slice) ---------
-// Temporary single-row table that DevSync uses to prove end-to-end sync.
-// Remove once room/player sync replaces it.
-export const syncState = table(
-  { name: 'sync_state', public: true },
-  {
-    id: t.u32().primaryKey(),
-    value: t.string(),
-    updatedBy: t.string(),
-  }
-);
 
 // --- Room lifecycle ----------------------------------------------------------
 export const rooms = table(
@@ -43,6 +30,8 @@ export const rooms = table(
     startsAtMs: t.i64(),
     endsAtMs: t.i64(),
     createdAtMs: t.i64(),
+    /** Last scheduled income tick applied (ms). Debounces duplicate scheduler fires. */
+    lastTickAtMs: t.i64(),
   }
 );
 

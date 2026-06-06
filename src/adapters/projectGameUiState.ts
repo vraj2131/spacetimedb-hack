@@ -181,30 +181,43 @@ function buildConnectionState(
   };
 }
 
+function ownedTileCount(tiles: readonly LiveTileRow[], playerId: number): number {
+  return tiles.filter(tile => tile.ownerPlayerId === playerId).length;
+}
+
+function incomePerSecond(tiles: readonly LiveTileRow[], playerId: number): number {
+  return ownedTileScore(tiles, playerId);
+}
+
 function buildLiveStandings(
   roomPlayers: readonly LivePlayerRow[],
   roomTiles: readonly LiveTileRow[],
   playerStates: readonly LivePlayerStateRow[],
+  roomId: number,
 ): LiveStanding[] {
-  const stateByPlayerId = new Map(playerStates.map(state => [state.playerId, state]));
+  const stateByPlayerId = new Map(
+    playerStates.filter(state => state.roomId === roomId).map(state => [state.playerId, state]),
+  );
 
   return roomPlayers
     .filter(player => player.role === 'player')
     .map(player => {
       const state = stateByPlayerId.get(player.id);
-      const score = state
-        ? Number(state.tileIncomeTotal ?? 0) + Number(state.pickupCashTotal ?? 0)
-        : ownedTileScore(roomTiles, player.id);
+      const tilesOwned = ownedTileCount(roomTiles, player.id);
+      const incomePerSecondRate = incomePerSecond(roomTiles, player.id);
+      const score = state ? Number(state.cash ?? 0) : 0;
 
       return {
         id: String(player.id),
         name: player.name,
         color: player.color,
         score,
+        tilesOwned,
+        incomePerSecond: incomePerSecondRate,
         status: player.connected ? 'On the board' : 'Disconnected',
       };
     })
-    .sort((left, right) => right.score - left.score || left.name.localeCompare(right.name));
+    .sort((left, right) => right.score - left.score || right.tilesOwned - left.tilesOwned || left.name.localeCompare(right.name));
 }
 
 function buildEvents(
@@ -300,7 +313,7 @@ export function projectGameUiState({
     roomState === 'live'
       ? resolvePickupIdAt(roomPickups, roomId, localPlayerState.x, localPlayerState.y)
       : null;
-  const liveStandings = buildLiveStandings(roomPlayers, roomTiles, playerStates);
+  const liveStandings = buildLiveStandings(roomPlayers, roomTiles, playerStates, roomId);
   const projectedEvents = buildEvents(roomEvents, nowMs);
   const recentTaunt = newestTaunt(roomTaunts);
   const results = buildResults(roomResultRows, roomPlayers);
@@ -389,10 +402,13 @@ export function projectGameUiState({
       localCash: localPlayerState?.cash ?? 0,
       localTileIncome: localPlayerState?.tileIncomeTotal ?? 0,
       localPickupCash: localPlayerState?.pickupCashTotal ?? 0,
+      localTilesOwned: localPlayer ? ownedTileCount(roomTiles, localPlayer.id) : 0,
+      localIncomePerSecond: localPlayer ? incomePerSecond(roomTiles, localPlayer.id) : 0,
       claimHint: 'Pick Claim or Contest, then click an adjacent tile.',
       canLeaveRoom,
       localPickupId,
       canCollectPickup: localPickupId != null && roomState === 'live' && !isSpectator,
+      canCollect: localPickupId != null && roomState === 'live' && !isSpectator,
       localPlayerEffects: {
         speedBoost: localPlayerState ? toNumberMs(localPlayerState.speedUntilMs) > nowMs : false,
         stunned: localPlayerState ? toNumberMs(localPlayerState.disabledUntilMs) > nowMs : false,
@@ -405,7 +421,7 @@ export function projectGameUiState({
       winnerName: results[0]?.name ?? null,
       recapLine:
         results.length > 0
-          ? 'Final scores from round_results.'
+          ? 'Total = tile income + pickup cash + territory bonus (see breakdown).'
           : 'Waiting for round_results rows.',
       results,
       canRematch,

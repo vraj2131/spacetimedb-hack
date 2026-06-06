@@ -22,6 +22,7 @@ const files = {
   reducersSpectator: read('spacetimedb/src/reducers.spectator.ts'),
   reducersFlavor: read('spacetimedb/src/reducers.flavor.ts'),
   reducersTick: read('spacetimedb/src/reducers.tick.ts'),
+  income: read('spacetimedb/src/income.ts'),
   serverIndex: read('spacetimedb/src/index.ts'),
   map: read('spacetimedb/src/map.ts'),
   // client
@@ -59,16 +60,14 @@ const checks = [
   ['module_bindings stays generated (untracked)', read('.gitignore').includes('src/module_bindings/')],
 
   // --- server: schema split ----------------------------------------------
-  ['tables.ts keeps the dev sync_state table', files.tables.includes("name: 'sync_state'")],
-  ['tables.ts makes sync_state public', files.tables.includes('public: true')],
+  ['tables.ts no longer keeps the dev sync_state table', !files.tables.includes("name: 'sync_state'")],
   ...GAME_TABLES.map(name => [`tables.ts defines ${name}`, files.tables.includes(`name: '${name}'`)]),
   ['reducers.tick.ts defines scheduled round_tick', files.reducersTick.includes("name: 'round_tick'") && files.reducersTick.includes('t.scheduleAt()')],
   ['schema.ts builds the schema() instance', files.schema.includes('schema({') && files.schema.includes('export default spacetimedb')],
   ['schema.ts registers all game tables', SCHEMA_TABLES.every(name => files.schema.includes(name))],
 
-  // --- server: dev round-trip kept ---------------------------------------
-  ['reducers.dev.ts keeps set_value', files.reducersDev.includes("'set_value'")],
-  ['reducers.dev.ts seeds the single row', files.reducersDev.includes("value: 'first-pipe-online'")],
+  // --- server: dev lifecycle hooks ---------------------------------------
+  ['reducers.dev.ts no longer keeps set_value', !files.reducersDev.includes("'set_value'")],
   ['reducers.dev.ts defines lifecycle hooks', files.reducersDev.includes('clientConnected') && files.reducersDev.includes('clientDisconnected')],
 
   // --- server: no gameplay reducer stubs remain --------------------------
@@ -145,6 +144,12 @@ const checks = [
       files.reducersPlayer.includes('collect_pickup: not on the pickup'),
   ],
   [
+    'tick_round applies passive tile income',
+    files.reducersTick.includes("name: 'tick_round'") &&
+      files.reducersTick.includes('applyRoomTileIncome') &&
+      files.income.includes('MIN_INCOME_TICK_GAP_MS'),
+  ],
+  [
     'trigger_spectator_event is implemented (deducts energy)',
     files.reducersSpectator.includes("name: 'trigger_spectator_event'") &&
       !files.reducersSpectator.includes('not implemented: trigger_spectator_event') &&
@@ -156,7 +161,7 @@ const checks = [
       !files.reducersTick.includes('not implemented: tick_round') &&
       files.reducersTick.includes('ctx.senderAuth.isInternal') &&
       files.reducersTick.includes('resolveExpiredContests') &&
-      files.reducersTick.includes('applyTileIncome'),
+      files.reducersTick.includes('applyRoomTileIncome'),
   ],
   [
     'reset_demo_room is implemented (host hard-deletes room data)',
@@ -186,9 +191,8 @@ const checks = [
   ['App.tsx is a dumb router over a Screen union', files.app.includes('export type Screen') && files.app.includes('switch (screen)')],
   ...SCREENS.map(name => [`screen ${name} stub exists`, existsSync(`src/screens/${name}.tsx`)]),
   ['DevSync holds the round-trip (useSpacetimeDB)', files.devSync.includes('useSpacetimeDB()')],
-  ['DevSync reads the generated sync_state table', files.devSync.includes('useTable(tables.sync_state)')],
-  ['DevSync obtains a typed connection', files.devSync.includes('getConnection() as DbConnection | null')],
-  ['DevSync calls the reducer through conn.reducers', files.devSync.includes('conn?.reducers.setValue')],
+  ['DevSync reads subscribed game tables', files.devSync.includes('useTable(tables.rooms)') && files.devSync.includes('useTable(tables.players)')],
+  ['DevSync calls room reducers through conn.reducers', files.devSync.includes('conn.reducers.registerPlayer') && files.devSync.includes('conn.reducers.createRoom')],
   ['DevSync does not use the reducer hook', !files.devSync.includes('useReducer')],
   ['DevSync mounts the Phaser canvas', files.devSync.includes('<PhaserGame')],
   ['PhaserGame mounts + tears down a live Phaser.Game', files.phaserGame.includes('new Phaser.Game') && files.phaserGame.includes('game.destroy(true)')],

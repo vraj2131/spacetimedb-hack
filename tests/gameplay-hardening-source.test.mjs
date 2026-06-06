@@ -22,7 +22,7 @@ test('contest_tile starts a pending timed contest instead of flipping immediatel
   assert.match(tickReducers, /resolveExpiredContests/);
   assert.match(tickReducers, /ownerPlayerId: attackerId/);
   assert.match(tickReducers, /eventType: 'takeover'/);
-  assert.match(tickReducers, /resolveExpiredContests\(ctx, room\.id, nowMs\);[\s\S]*applyTileIncome/);
+  assert.match(tickReducers, /resolveExpiredContests\(ctx, room\.id, nowMs\);[\s\S]*applyRoomTileIncome/);
 });
 
 test('shield blocks contests and spill extends contest duration', () => {

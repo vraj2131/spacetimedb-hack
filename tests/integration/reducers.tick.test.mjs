@@ -84,29 +84,40 @@ async function liveRoomWithSpectator() {
   return { host, spectator, room, hostPlayer, spectatorPlayer };
 }
 
-test('scheduled tick grants tile income for owned tiles', { skip }, async () => {
+test('scheduled tick grants passive tile income for owned tiles', { skip }, async () => {
   if (skip) return;
   const { host, room, hostPlayer } = await liveRoomWithSpectator();
 
   const street = tileAt(host.conn, room.id, 2, 1);
   assert.ok(street, 'street tile adjacent to host exists');
-  assert.ok(
-    [...host.conn.db.round_tick.iter()].some((row) => row.roomId === room.id),
-    'startRound seeded a scheduled tick row'
-  );
   await host.conn.reducers.claimTile({ tileId: street.id });
 
-  const state = await waitFor(
+  let state = host.conn.db.player_state.playerId.find(hostPlayer.id);
+  assert.equal(state.cash, 0, 'claim alone does not grant instant income');
+
+  state = await waitFor(
     () => {
-      const row = host.conn.db.player_state.playerId.find(hostPlayer.id);
-      return row && row.tileIncomeTotal >= 1 && row.cash >= 1 ? row : null;
+      const next = host.conn.db.player_state.playerId.find(hostPlayer.id);
+      return next && next.cash >= 1 ? next : null;
     },
-    'scheduled tick applied street income',
-    4_000
+    'passive income from scheduled tick',
+    4_000,
   );
 
-  assert.ok(state.tileIncomeTotal >= 1);
-  assert.ok(state.cash >= 1);
+  assert.equal(state.tileIncomeTotal, state.cash);
+});
+
+test('passive tile income stays bounded for one street tile', { skip }, async () => {
+  if (skip) return;
+  const { host, room, hostPlayer } = await liveRoomWithSpectator();
+
+  const street = tileAt(host.conn, room.id, 2, 1);
+  await host.conn.reducers.claimTile({ tileId: street.id });
+  await new Promise((resolve) => setTimeout(resolve, 3_500));
+
+  const state = host.conn.db.player_state.playerId.find(hostPlayer.id);
+  assert.ok(state.cash >= 2, 'at least two passive income ticks');
+  assert.ok(state.cash <= 5, `cash ${state.cash} exceeds ~1/sec for one street tile`);
 });
 
 test('round_tick stays single-row while live and clears on finish/rematch/close', { skip }, async () => {

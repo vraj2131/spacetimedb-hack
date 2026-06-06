@@ -31,6 +31,9 @@ by integration or unit tests.
 **Room lifecycle:** `leave_room` and `close_room` reducers with Lobby/Match/Results UI wiring,
 visible action errors on all room screens, and auto-route back to Join when `player.roomId` resets to `0`.
 
+**Slice 2 cutover:** `sync_state` retired; DevSync proves subscription sync via `rooms`/`players`.
+App defaults to Join instead of the Phase 0 dev scaffold.
+
 1. **Browser smoke not CI-gated** — run the two-client checklist in `docs/M1_SMOKE_TEST.md` (includes claim, contest, collect, auto-end, leave/close).
 2. **L4 UI polish** — `EventFeed`, `SpectatorBar`, `TauntBubble`, and Judge projector view remain open.
 3. **Judge/resilience and polish** — refresh/no-leakage acceptance, SFX/mobile, and deployment hardening remain open.

@@ -148,7 +148,6 @@ export class BoardScene extends Phaser.Scene {
   private scenerySprites = new Map<string, ScenerySprite>();
   private gridLines: Phaser.GameObjects.Graphics | null = null;
   private skyline: Phaser.GameObjects.Graphics | null = null;
-  private frame: Phaser.GameObjects.Graphics | null = null;
   private atlasReady = false;
   private unsubscribeRenderState: (() => void) | null = null;
   private pendingRenderState: RenderState | null = null;
@@ -156,6 +155,9 @@ export class BoardScene extends Phaser.Scene {
   private lastRenderState: RenderState | null = null;
   private minZoom = 0.35;
   private maxZoom = 2.5;
+  private cameraInitialized = false;
+  private userAdjustedOverview = false;
+  private followDetached = false;
   private isPanning = false;
   private didPan = false;
   private panPointerId = -1;
@@ -202,6 +204,12 @@ export class BoardScene extends Phaser.Scene {
       const dy = pointer.y - this.panStart.y;
       if (Math.hypot(dx, dy) < 6) return;
       this.didPan = true;
+      if (this.cameraMode === 'overview') {
+        this.userAdjustedOverview = true;
+      } else {
+        this.followDetached = true;
+        camera.stopFollow();
+      }
       camera.scrollX = this.panStart.scrollX - dx / camera.zoom;
       camera.scrollY = this.panStart.scrollY - dy / camera.zoom;
     });
@@ -238,6 +246,9 @@ export class BoardScene extends Phaser.Scene {
         const nextZoom = Phaser.Math.Clamp(prevZoom - deltaY * 0.0015, this.minZoom, this.maxZoom);
         if (nextZoom === prevZoom) return;
 
+        if (this.cameraMode === 'overview') {
+          this.userAdjustedOverview = true;
+        }
         const worldBeforeZoom = pointer.positionToCamera(camera) as Phaser.Math.Vector2;
         camera.setZoom(nextZoom);
         camera.preRender();
@@ -249,7 +260,9 @@ export class BoardScene extends Phaser.Scene {
 
     this.scale.on('resize', () => {
       if (this.lastRenderState) {
-        this.configureCamera(this.lastRenderState);
+        const preserveView =
+          this.cameraMode === 'overview' ? !this.userAdjustedOverview : this.followDetached;
+        this.configureCamera(this.lastRenderState, !preserveView);
       }
     });
   }
@@ -299,7 +312,14 @@ export class BoardScene extends Phaser.Scene {
     this.syncScenery(state.tiles);
     this.syncPickups(state.pickups);
     this.syncTokens(state.tokens);
-    this.configureCamera(state);
+
+    const forceCameraReset = !this.cameraInitialized || dimensionsChanged;
+    if (dimensionsChanged) {
+      this.userAdjustedOverview = false;
+      this.followDetached = false;
+    }
+    this.configureCamera(state, forceCameraReset);
+    this.cameraInitialized = true;
   }
 
   private rebuildBoardShell(state: RenderState): void {
@@ -361,11 +381,6 @@ export class BoardScene extends Phaser.Scene {
       }
     }
     this.gridLines.setDepth(9_500);
-
-    this.frame = this.add.graphics();
-    this.frame.lineStyle(3, 0xf7d27a, 0.8);
-    this.frame.strokeRect(bounds.x + 16, bounds.y + 16, bounds.width - 32, bounds.height - 32);
-    this.frame.setDepth(10_000);
   }
 
   private destroyBoardObjects(): void {
@@ -392,8 +407,6 @@ export class BoardScene extends Phaser.Scene {
     this.gridLines = null;
     this.skyline?.destroy();
     this.skyline = null;
-    this.frame?.destroy();
-    this.frame = null;
   }
 
   private syncTiles(tiles: readonly RenderTile[]): void {
@@ -629,7 +642,7 @@ export class BoardScene extends Phaser.Scene {
     return Math.min(camera.width / bounds.width, camera.height / bounds.height) * 0.94;
   }
 
-  private configureCamera(state: RenderState): void {
+  private configureCamera(state: RenderState, forceReset = false): void {
     const camera = this.cameras?.main;
     if (!camera) return;
 
@@ -637,21 +650,44 @@ export class BoardScene extends Phaser.Scene {
     const fitZoom = this.getFitZoom(camera, state);
     this.minZoom = fitZoom;
     this.maxZoom = Math.max(fitZoom * 2.4, 1.25);
+    camera.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
 
     if (this.cameraMode === 'overview') {
       camera.stopFollow();
-      camera.setZoom(fitZoom);
-      camera.centerOn(bounds.centerX, bounds.centerY);
+      if (forceReset) {
+        camera.setZoom(fitZoom);
+        camera.centerOn(bounds.centerX, bounds.centerY);
+        this.userAdjustedOverview = false;
+        return;
+      }
+
+      camera.setZoom(Phaser.Math.Clamp(camera.zoom, this.minZoom, this.maxZoom));
       return;
     }
 
-    camera.setZoom(Math.max(fitZoom, 0.75));
+    if (this.followDetached) {
+      camera.stopFollow();
+      camera.setZoom(Phaser.Math.Clamp(camera.zoom, this.minZoom, this.maxZoom));
+      return;
+    }
+
     const followId = this.localPlayerId ?? state.tokens[0]?.playerId;
     const followTarget = followId === undefined ? undefined : this.tokenSprites.get(followId)?.body;
+
+    if (forceReset) {
+      camera.setZoom(Math.max(fitZoom, 0.75));
+      this.followDetached = false;
+    }
+
+    camera.setZoom(Phaser.Math.Clamp(camera.zoom, this.minZoom, this.maxZoom));
+
     if (followTarget) {
       camera.startFollow(followTarget, true, 0.14, 0.14);
-    } else {
-      camera.stopFollow();
+      return;
+    }
+
+    camera.stopFollow();
+    if (forceReset) {
       camera.centerOn(bounds.centerX, bounds.centerY);
     }
   }

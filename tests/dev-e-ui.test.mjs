@@ -53,12 +53,12 @@ test('Dev E adapter exposes backend handoff view models and actions', () => {
   }
 });
 
-test('App preserves the dev scaffold while exposing the Dev E screen flow', () => {
+test('App defaults to Join while keeping the dev scaffold reachable', () => {
   const app = read('src/App.tsx');
 
-  assert.match(app, /useState<Screen>\('dev'\)/);
+  assert.match(app, /useState<Screen>\('join'\)/);
   assert.match(app, /useLiveGameState/);
-  assert.match(app, /navigateToJoin/);
+  assert.match(app, /onReturnToDev/);
   assert.match(app, /<DevSync/);
   assert.match(app, /Start Bodega Blitz/);
 });
@@ -74,15 +74,20 @@ test('Dev E screens consume view models and action callbacks instead of mockData
 test('player-facing screens expose leave-close flow and claim guidance', () => {
   const lobby = read('src/screens/Lobby.tsx');
   const match = read('src/screens/Match.tsx');
+  const matchTopBar = read('src/components/MatchTopBar.tsx');
+  const matchBottomDock = read('src/components/MatchBottomDock.tsx');
   const results = read('src/screens/Results.tsx');
 
   assert.match(lobby, /Close room/);
   assert.match(lobby, /Leave room/);
   assert.match(lobby, /actionStatusLabel/);
-  assert.match(match, /Leave room/);
-  assert.match(match, /Claim/);
-  assert.match(match, /Contest/);
-  assert.match(match, /Collect/);
+  assert.match(matchTopBar, /Leave room/);
+  assert.match(matchBottomDock, /Claim/);
+  assert.match(matchBottomDock, /Contest/);
+  assert.match(matchBottomDock, /Collect/);
+  assert.match(match, /MatchTopBar/);
+  assert.match(match, /MatchBottomDock/);
+  assert.match(matchBottomDock, /actionStatusLabel/);
   assert.match(results, /Close room/);
   assert.match(results, /Leave room/);
   assert.match(results, /actionStatusLabel/);
@@ -94,6 +99,8 @@ test('Dev E components have empty-state labels for backend-not-ready data', () =
     'src/components/Scoreboard.tsx': ['No standings yet', 'No result rows yet'],
     'src/components/PlayerRoster.tsx': ['Waiting for players'],
     'src/components/Hud.tsx': ['No events yet', 'Taunts warming up'],
+    'src/components/EventFeed.tsx': ['No events yet'],
+    'src/components/TauntBubble.tsx': ['Taunts warming up'],
   };
 
   for (const [path, labels] of Object.entries(componentChecks)) {
