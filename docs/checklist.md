@@ -81,10 +81,10 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 
 - [ ] Game schema replaces `sync_state` (`rooms`, `players`, `player_state`, `tiles`, …) — _tables scaffolded alongside `sync_state`; `sync_state` still drives the dev round-trip_
 - [ ] `register_player`, `create_room`, `join_room`, `start_round` reducers — _signatures scaffolded; bodies throw `not implemented`_
-- [ ] `spacetimedb/src/map.ts` — 12×8 layout + spawn corners — _stub: dimensions + spawn corners present; full layout pending_
+- [ ] `spacetimedb/src/map.ts` — 28x20 layout + spawn corners — _dimensions + spawn corners are in place; full live room sync still pending_
 - [ ] Join screen (nickname, role, optional room code)
 - [ ] Lobby screen (code, roster, host start button)
-- [ ] Phaser draws 12×8 grid as colored rectangles
+- [x] Phaser renders the 28x20 mock board in isometric projection
 - [ ] `move_player` works across two tabs
 
 ### Slice 3 — Claim + results
@@ -130,9 +130,9 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 
 ### Slice 8 — Phaser sprites
 
-- [x] Texture atlas in `public/assets/` — _Dev D shipped `game.png` + `game.json` (17 frames); `BoardScene` does not load it yet_
-- [ ] Replace rectangles with tile / token / pickup sprites
-- [ ] Effect overlays (spill, shield, speed)
+- [x] Texture atlas in `public/assets/` — _Kenney `game.png` + `game.json` ship and load through `BoardScene`_
+- [x] Replace fallback rectangles with atlas-backed tile / pickup / FX rendering where available
+- [x] Effect overlays (spill, shield, speed)
 - [ ] Idle / walk animations (if time)
 
 ### Slice 9 — LLM flavor
@@ -175,5 +175,5 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 - [x] Filtered `useTable` / room-scoped subscription syntax (`roomId.eq(…)`, `.and(…)`)
 - [x] SpacetimeDB 2.0 scheduled-table / `tick_round` exact syntax (`t.scheduleAt()`, `{ arg: rowType }`)
 - [ ] Groq + Gemini model string smoke tests
-- [ ] Phaser 4 loader / atlas API names
+- [x] Phaser 4 loader / atlas API names
 - [x] Tailwind v4 + template Vite version compatibility

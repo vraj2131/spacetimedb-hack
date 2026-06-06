@@ -41,6 +41,10 @@ If you need to run the frontend separately:
 npm run dev
 ```
 
+For a mock visual board demo without live gameplay, run `npm run dev`, open the
+Vite URL, and walk `Start Bodega Blitz -> Lobby -> Start round`. See
+`docs/SIMULATION.md`.
+
 ## Verification
 
 ```sh
@@ -52,4 +56,4 @@ Then open the app and confirm:
 - the page loads
 - the connection status becomes `Connected`
 - the shared value updates across two tabs
-- the Phaser board canvas renders the 12×8 grid beside the sync proof
+- the Phaser board canvas renders the 28x20 mock board beside the sync proof

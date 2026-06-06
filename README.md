@@ -4,12 +4,12 @@ Live multiplayer NYC block-control game built on SpacetimeDB. Players will fight
 
 ## Current Phase Status
 
-This repository is in **Phase 0: scaffold standardization**.
+This repository is in **Wave 1: mocked game flow plus visual board simulation**.
 
-- We are validating installs, env setup, connection defaults, and team workflow.
-- The current UI is a temporary round-trip baseline, not the real game.
-- Phaser is installed so the team shares the final rendering stack early.
-- No one should start gameplay work until the scaffold checklist passes for the whole team.
+- Installs, bindings, and local-first defaults are already in place.
+- The board can now be demoed locally from mock `RenderState` without live gameplay.
+- Dev Sync still exists for connection and round-trip checks.
+- Live multiplayer reducers and the backend-to-`RenderState` adapter are still pending.
 
 This repo uses a **local-first dev path**. Maincloud is for smoke tests and deployment, not daily iteration.
 
@@ -61,6 +61,16 @@ If you need a frontend-only fallback in another terminal:
 ```sh
 npm run dev
 ```
+
+For the visual simulation path, open the Vite URL and walk:
+
+1. `Start Bodega Blitz`
+2. Join flow
+3. `Lobby`
+4. `Start round`
+
+That path reaches the fullscreen Match board powered by `MOCK_RENDER_STATE`.
+Detailed steps live in [docs/SIMULATION.md](docs/SIMULATION.md).
 
 Additional onboarding notes live in [docs/SETUP.md](docs/SETUP.md).
 
@@ -140,7 +150,7 @@ Then confirm all of these manually:
 - the browser app loads
 - the connection status shows `Connected`
 - the shared value syncs across two tabs
-- the Phaser board canvas renders the 12×8 grid beside the sync proof
+- the Phaser board canvas renders the 28x20 mock board beside the sync proof
 - there are no missing env errors
 
 Each teammate should post in the team channel:
@@ -155,7 +165,7 @@ Each teammate should post in the team channel:
 - `spacetimedb/` holds the SpacetimeDB module
 - `src/` holds the current Vite React client
 - `src/module_bindings/` is generated and should not be edited by hand
-- `src/game/PhaserGame.tsx` mounts the live board canvas; full BoardScene + EventBus land in Slice 2 (Dev B)
+- `src/game/PhaserGame.tsx` mounts the live board canvas and defaults to `MOCK_RENDER_STATE`
 - keep the `sync_state` proof until the first real gameplay slice replaces it
 
 ## Troubleshooting
