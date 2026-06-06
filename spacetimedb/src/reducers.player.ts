@@ -112,6 +112,15 @@ function toNumberMs(value: number | bigint): number {
   return typeof value === 'bigint' ? Number(value) : value;
 }
 
+/** Pickup-event lifetime in the feed (ms). */
+const PICKUP_EVENT_TTL_MS = 30_000n;
+
+/** Coffee speed boost duration (ms). */
+const COFFEE_BOOST_MS = 10_000n;
+
+/** Shield duration on a tile (ms). */
+const SHIELD_DURATION_MS = 15_000n;
+
 /** Claim-event lifetime in the feed (ms). */
 const CLAIM_EVENT_TTL_MS = 30_000n;
 
@@ -278,7 +287,82 @@ export const contestTile = spacetimedb.reducer(
 export const collectPickup = spacetimedb.reducer(
   { name: 'collect_pickup' },
   { pickupId: t.u32() },
-  _ctx => {
-    throw new Error('not implemented: collect_pickup');
+  (ctx, { pickupId }) => {
+    const player = [...ctx.db.players.identity.filter(ctx.sender)][0];
+    if (!player) {
+      throw new SenderError('collect_pickup: caller is not a registered player');
+    }
+    if (player.role !== 'player') {
+      throw new SenderError('collect_pickup: only players can collect pickups');
+    }
+
+    const room = ctx.db.rooms.id.find(player.roomId);
+    if (!room || room.state !== 'live') {
+      throw new SenderError('collect_pickup: round is not live');
+    }
+
+    const state = ctx.db.player_state.playerId.find(player.id);
+    if (!state) {
+      throw new SenderError('collect_pickup: no player_state (round not started)');
+    }
+
+    const pickup = ctx.db.pickups.id.find(pickupId);
+    if (!pickup) {
+      throw new SenderError('collect_pickup: pickup not found');
+    }
+    if (pickup.roomId !== player.roomId) {
+      throw new SenderError('collect_pickup: pickup belongs to another room');
+    }
+    if (!pickup.active) {
+      throw new SenderError('collect_pickup: pickup is not active');
+    }
+
+    // Must be standing on the same tile as the pickup.
+    if (
+      gridCoord(pickup.x) !== gridCoord(state.x) ||
+      gridCoord(pickup.y) !== gridCoord(state.y)
+    ) {
+      throw new SenderError('collect_pickup: not on the pickup tile');
+    }
+
+    const nowMs = timestampMs(ctx);
+
+    // Apply pickup effect by type.
+    if (pickup.pickupType === 'cash') {
+      ctx.db.player_state.playerId.update({
+        ...state,
+        cash: state.cash + pickup.value,
+        pickupCashTotal: state.pickupCashTotal + pickup.value,
+      });
+    } else if (pickup.pickupType === 'coffee') {
+      ctx.db.player_state.playerId.update({
+        ...state,
+        speedUntilMs: nowMs + COFFEE_BOOST_MS,
+      });
+    } else if (pickup.pickupType === 'shield') {
+      // Find the tile at the pickup's position and shield it.
+      const tile = [...ctx.db.tiles.roomId.filter(player.roomId)].find(
+        t => t.x === pickup.x && t.y === pickup.y
+      );
+      if (tile) {
+        ctx.db.tiles.id.update({ ...tile, shieldUntilMs: nowMs + SHIELD_DURATION_MS });
+      }
+    }
+
+    // Deactivate the pickup.
+    ctx.db.pickups.id.update({ ...pickup, active: false });
+
+    // Insert pickup event.
+    ctx.db.events.insert({
+      id: 0n, // auto-increment
+      roomId: player.roomId,
+      eventType: 'pickup',
+      sourcePlayerId: player.id,
+      targetPlayerId: undefined,
+      targetTileId: undefined,
+      message: `${player.name} collected ${pickup.pickupType}`,
+      createdAtMs: nowMs,
+      expiresAtMs: nowMs + PICKUP_EVENT_TTL_MS,
+    });
   }
 );

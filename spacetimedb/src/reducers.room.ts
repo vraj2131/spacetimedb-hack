@@ -184,6 +184,46 @@ export const startRound = spacetimedb.reducer(
       });
     });
 
+    // Seed pickups: 4 cash, 3 coffee, 3 shield on random non-alley tiles.
+    ctx.db.pickups.roomId.delete(roomId);
+
+    const nonAlleyTiles: { x: number; y: number }[] = [];
+    for (let x = 0; x < MAP_WIDTH; x++) {
+      for (let y = 0; y < MAP_HEIGHT; y++) {
+        if (tileTypeAt(x, y) !== 'alley') {
+          nonAlleyTiles.push({ x, y });
+        }
+      }
+    }
+
+    const pickupDefs: { pickupType: string; value: number }[] = [
+      { pickupType: 'cash', value: 5 },
+      { pickupType: 'cash', value: 5 },
+      { pickupType: 'cash', value: 5 },
+      { pickupType: 'cash', value: 5 },
+      { pickupType: 'coffee', value: 0 },
+      { pickupType: 'coffee', value: 0 },
+      { pickupType: 'coffee', value: 0 },
+      { pickupType: 'shield', value: 0 },
+      { pickupType: 'shield', value: 0 },
+      { pickupType: 'shield', value: 0 },
+    ];
+
+    for (const def of pickupDefs) {
+      const idx = ctx.random.integerInRange(0, nonAlleyTiles.length - 1);
+      const pos = nonAlleyTiles[idx];
+      ctx.db.pickups.insert({
+        id: 0, // auto-increment
+        roomId,
+        x: pos.x,
+        y: pos.y,
+        pickupType: def.pickupType,
+        value: def.value,
+        active: true,
+        spawnedAtMs: nowMs,
+      });
+    }
+
     ctx.db.rooms.id.update({
       ...room,
       state: 'live',
