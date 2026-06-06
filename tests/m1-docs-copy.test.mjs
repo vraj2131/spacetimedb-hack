@@ -66,6 +66,7 @@ test('checklist marks M1 live UI items complete and atlas sprites landed', () =>
     assert.match(checklist, new RegExp(landed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
 
+  assert.match(checklist, /Slice 2b — Room lifecycle/);
   assert.match(checklist, /M1_SMOKE_TEST\.md/);
 });
 
@@ -109,5 +110,6 @@ test('ROADMAP reflects L2A-L2C landed and notes remaining L4 polish', () => {
   assert.match(roadmap, /L4 UI polish/);
   assert.match(roadmap, /L3A landed/);
   assert.match(roadmap, /M2B landed/);
+  assert.match(roadmap, /leave_room/);
   assert.match(roadmap, /M1_SMOKE_TEST\.md/);
 });

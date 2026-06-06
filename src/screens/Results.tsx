@@ -24,6 +24,10 @@ export function ResultsScreen({ viewModel, actions }: ResultsScreenProps) {
             <p className="mt-2 text-3xl font-black text-slate-950">{viewModel.roomCode}</p>
           </div>
 
+          {viewModel.actionStatusLabel ? (
+            <p className="mt-4 text-sm font-semibold text-rose-700">{viewModel.actionStatusLabel}</p>
+          ) : null}
+
           <div className="mt-6 flex flex-wrap gap-3">
             <button
               type="button"
@@ -33,22 +37,22 @@ export function ResultsScreen({ viewModel, actions }: ResultsScreenProps) {
             >
               Rematch
             </button>
-            {viewModel.canCloseRoom ? (
-              <button
-                type="button"
-                onClick={() => actions.onCloseRoom(viewModel.roomId)}
-                className="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-700"
-              >
-                Close room
-              </button>
-            ) : null}
             {viewModel.canLeaveRoom ? (
               <button
                 type="button"
                 onClick={() => actions.onLeaveRoom(viewModel.roomId)}
-                className="rounded-md border border-slate-300 bg-slate-50 px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-600"
+                className="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-700"
               >
                 Leave room
+              </button>
+            ) : null}
+            {viewModel.canCloseRoom ? (
+              <button
+                type="button"
+                onClick={() => actions.onCloseRoom(viewModel.roomId)}
+                className="rounded-md border border-slate-300 bg-slate-50 px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-600"
+              >
+                Close room
               </button>
             ) : null}
           </div>

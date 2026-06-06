@@ -18,7 +18,7 @@ export function Scoreboard({ title, ...props }: ScoreboardProps) {
   return (
     <section className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
       <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
-        {title ?? (props.mode === 'live' ? 'Live standings' : 'Final standings')}
+        {title ?? (props.mode === 'live' ? 'Live standings (income + pickups)' : 'Final standings')}
       </p>
       <div className="mt-3 grid gap-2">
         {props.entries.length === 0 ? (

@@ -72,6 +72,8 @@ export type LivePlayerStateRow = {
   readonly x?: number;
   readonly y?: number;
   readonly cash?: number;
+  readonly tileIncomeTotal?: number;
+  readonly pickupCashTotal?: number;
   readonly speedUntilMs: number | bigint;
   readonly disabledUntilMs: number | bigint;
 };
@@ -182,16 +184,26 @@ function buildConnectionState(
 function buildLiveStandings(
   roomPlayers: readonly LivePlayerRow[],
   roomTiles: readonly LiveTileRow[],
+  playerStates: readonly LivePlayerStateRow[],
 ): LiveStanding[] {
+  const stateByPlayerId = new Map(playerStates.map(state => [state.playerId, state]));
+
   return roomPlayers
     .filter(player => player.role === 'player')
-    .map(player => ({
-      id: String(player.id),
-      name: player.name,
-      color: player.color,
-      score: ownedTileScore(roomTiles, player.id),
-      status: player.connected ? 'On the board' : 'Disconnected',
-    }))
+    .map(player => {
+      const state = stateByPlayerId.get(player.id);
+      const score = state
+        ? Number(state.tileIncomeTotal ?? 0) + Number(state.pickupCashTotal ?? 0)
+        : ownedTileScore(roomTiles, player.id);
+
+      return {
+        id: String(player.id),
+        name: player.name,
+        color: player.color,
+        score,
+        status: player.connected ? 'On the board' : 'Disconnected',
+      };
+    })
     .sort((left, right) => right.score - left.score || left.name.localeCompare(right.name));
 }
 
@@ -288,10 +300,11 @@ export function projectGameUiState({
     roomState === 'live'
       ? resolvePickupIdAt(roomPickups, roomId, localPlayerState.x, localPlayerState.y)
       : null;
-  const liveStandings = buildLiveStandings(roomPlayers, roomTiles);
+  const liveStandings = buildLiveStandings(roomPlayers, roomTiles, playerStates);
   const projectedEvents = buildEvents(roomEvents, nowMs);
   const recentTaunt = newestTaunt(roomTaunts);
   const results = buildResults(roomResultRows, roomPlayers);
+  const actionStatusLabel = matchActionStatus(connection);
   const playerCount = roomPlayers.filter(player => player.role === 'player').length;
   const spectatorCount = roomPlayers.filter(player => player.role === 'spectator').length;
   const canStartRound = isHost && roomState === 'lobby' && !isSpectator;
@@ -341,6 +354,7 @@ export function projectGameUiState({
       canStartRound,
       canLeaveRoom,
       canCloseRoom,
+      actionStatusLabel,
       capacityLabel: `${playerCount} / ${MAX_PLAYERS}`,
       stateLabel: canStartRound ? 'Ready' : 'Waiting for host',
     },
@@ -370,9 +384,11 @@ export function projectGameUiState({
             { id: 'claim', label: 'Claim', enabled: roomState === 'live' },
           ],
       isHost,
-      actionStatusLabel: matchActionStatus(connection),
+      actionStatusLabel,
       spectatorEnergy: localSpectatorState?.energy ?? 0,
       localCash: localPlayerState?.cash ?? 0,
+      localTileIncome: localPlayerState?.tileIncomeTotal ?? 0,
+      localPickupCash: localPlayerState?.pickupCashTotal ?? 0,
       claimHint: 'Pick Claim or Contest, then click an adjacent tile.',
       canLeaveRoom,
       localPickupId,
@@ -395,6 +411,7 @@ export function projectGameUiState({
       canRematch,
       canCloseRoom,
       canLeaveRoom,
+      actionStatusLabel,
       hasResults: results.length > 0,
     },
   };
