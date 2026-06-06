@@ -18,25 +18,39 @@ test('GameStage measures its container and passes viewport dimensions to PhaserG
   assert.match(gameStage, /<PhaserGame/);
 });
 
-test('Match screen uses fullscreen GameStage instead of BoardShell', () => {
+test('Match screen uses outside-chrome layout with fullscreen GameStage', () => {
   const match = read('src/screens/Match.tsx');
 
   assert.doesNotMatch(match, /BoardShell/);
   assert.doesNotMatch(match, /<PhaserGame/);
+  assert.doesNotMatch(match, /match-overlay/);
+  assert.doesNotMatch(match, /CountdownOverlay/);
+  assert.doesNotMatch(match, /<Hud/);
+
   assert.match(match, /GameStage/);
   assert.match(match, /renderState=\{renderState\}/);
   assert.match(match, /onTileClick=\{handleTileClick\}/);
-  assert.match(match, /cameraMode="overview"/);
+  assert.match(match, /cameraMode=\{viewModel\.isSpectator \? 'overview' : 'follow'\}/);
+  assert.match(match, /localPlayerId=\{localPlayerId/);
   assert.match(match, /match-screen/);
-  assert.match(match, /match-overlay/);
-  assert.match(match, /End round/);
-  assert.match(match, /actions\.onMove/);
-  assert.match(match, /actions\.onClaimTileAt/);
-  assert.match(match, /actions\.onContestTileAt/);
-  assert.match(match, /actions\.onCollectPickupAt/);
+  assert.match(match, /match-body/);
+  assert.match(match, /MatchTopBar/);
+  assert.match(match, /MatchBottomDock/);
+  assert.match(match, /EventFeed/);
+  assert.match(match, /TauntBubble/);
+  assert.match(match, /variant="compact"/);
   assert.match(match, /tileActionMode/);
   assert.match(match, /handleCollect/);
-  assert.match(match, /Leave room/);
+
+  const bottomDock = read('src/components/MatchBottomDock.tsx');
+  assert.match(bottomDock, /actions\.onMove/);
+  assert.match(bottomDock, /Claim/);
+  assert.match(bottomDock, /Contest/);
+  assert.match(bottomDock, /Collect/);
+
+  const topBar = read('src/components/MatchTopBar.tsx');
+  assert.match(topBar, /Leave/);
+  assert.match(topBar, /Lobby/);
 });
 
 test('DevSync scaffold still uses the boxed panel layout', () => {
