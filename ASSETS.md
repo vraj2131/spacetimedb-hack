@@ -1,4 +1,4 @@
-# Bodega Blitz — Asset Sources & Licenses
+# Bodega Blitz - Asset Sources & Licenses
 
 Required for hackathon submission. All shipped art is **CC0** unless noted.
 
@@ -6,7 +6,25 @@ Last updated: June 6, 2026
 
 ---
 
-## Primary pack
+## Planned primary pack
+
+| Field | Value |
+|-------|-------|
+| **Name** | Downtown City MegaKit |
+| **Author** | Quaternius |
+| **License** | [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/) |
+| **Source** | https://quaternius.com |
+| **Pipeline repo** | `mNithik/3d-to-2.5d-render` |
+| **Attribution** | Not required |
+
+MegaKit renders are produced offline as transparent 128 x 256 PNGs named
+`renders/{frame_key}.png`, then packed into the shipped Phaser atlas.
+
+`source.zip` is unverified and is not used or shipped.
+
+---
+
+## Interim / fallback pack
 
 | Field | Value |
 |-------|-------|
@@ -18,7 +36,8 @@ Last updated: June 6, 2026
 | **Download** | `Prototype Pack (2.3).zip` (OpenGameArt direct) |
 | **Attribution** | Not required (appreciated) |
 
-Kenney assets may be used in commercial and non-commercial projects without permission.
+Kenney is the Phase 1 interim atlas and remains the fallback rebuild source
+until the MegaKit render set is complete.
 
 ---
 
@@ -26,49 +45,56 @@ Kenney assets may be used in commercial and non-commercial projects without perm
 
 | File | Description |
 |------|-------------|
-| `public/assets/game.png` | Texture atlas (17 frames, 128×256 px each) |
+| `public/assets/game.png` | Texture atlas (17 frames, 128 x 256 px each) |
 | `public/assets/game.json` | Phaser-compatible atlas JSON |
 
-**Loader (Slice 8):**
+**Loader:**
 
 ```ts
 this.load.atlas('game', 'assets/game.png', 'assets/game.json');
 ```
 
-### Frame map (17 frames)
+### Frame map
 
-| Atlas key | Kenney source (inside zip) | In-game use |
-|-----------|---------------------------|-------------|
-| `tile_street` | `Isometric/floor_E.png` | Street tile (common, low value) |
-| `tile_bodega` | `Isometric/doorClosed_E.png` | Bodega / deli storefront tile |
-| `tile_alley` | `Isometric/block_E.png` | Blocked alley tile |
-| `tile_pickup_spawn` | `Isometric/switchFloorOff_E.png` | Pickup spawn marker |
-| `token_red` | `Characters/Human/Human_0_Idle0.png` | Player token (red) |
-| `token_blue` | `Characters/Human/Human_1_Idle0.png` | Player token (blue) |
-| `token_green` | `Characters/Human/Human_2_Idle0.png` | Player token (green) |
-| `token_yellow` | `Characters/Human/Human_3_Idle0.png` | Player token (yellow) |
-| `token_red_walk_0` | `Characters/Human/Human_0_Run0.png` | Walk animation frame 0 |
-| `token_red_walk_1` | `Characters/Human/Human_0_Run1.png` | Walk animation frame 1 |
-| `pickup_cash` | `Isometric/crate_E.png` | Cash pickup |
-| `pickup_coffee` | `Isometric/poleGroup_E.png` | Coffee buff pickup |
-| `pickup_shield` | `Isometric/fence_E.png` | Shield / deli shutter pickup |
-| `fx_spill` | `Isometric/slopeHalf_E.png` | Spill slick overlay |
-| `fx_shield` | `Isometric/switchFloorOn_E.png` | Shield glow overlay |
-| `fx_speed` | `Isometric/arrow_E.png` | Speed boost overlay |
-| `bodega_cat` | `Characters/Human/Human_0_Idle0.png` (orange tint) | Taunt bubble mascot (stand-in) |
+| Atlas key | Current source | MegaKit target | In-game use |
+|-----------|----------------|----------------|-------------|
+| `tile_street` | Kenney `Isometric/floor_E.png` | Road/asphalt tile | Street tile |
+| `tile_bodega` | Kenney `Isometric/doorClosed_E.png` | Storefront facade | Bodega tile |
+| `tile_alley` | Kenney `Isometric/block_E.png` | Alley wall or blocked corner | Alley tile |
+| `tile_pickup_spawn` | Kenney `Isometric/switchFloorOff_E.png` | Floor decal | Optional pickup spawn marker |
+| `token_red` | Kenney character | Carryover optional | Optional token sprite |
+| `token_blue` | Kenney character | Carryover optional | Optional token sprite |
+| `token_green` | Kenney character | Carryover optional | Optional token sprite |
+| `token_yellow` | Kenney character | Carryover optional | Optional token sprite |
+| `token_red_walk_0` | Kenney character | Carryover optional | Optional walk frame |
+| `token_red_walk_1` | Kenney character | Carryover optional | Optional walk frame |
+| `pickup_cash` | Kenney `Isometric/crate_E.png` | Register, coin, or cash icon | Cash pickup |
+| `pickup_coffee` | Kenney `Isometric/poleGroup_E.png` | Coffee cup custom render | Coffee buff pickup |
+| `pickup_shield` | Kenney `Isometric/fence_E.png` | Deli shutter or shield icon | Shield pickup |
+| `fx_spill` | Kenney `Isometric/slopeHalf_E.png` | Ground slick decal | Spill overlay |
+| `fx_shield` | Kenney `Isometric/switchFloorOn_E.png` | Protected tile glow | Shield overlay |
+| `fx_speed` | Kenney `Isometric/arrow_E.png` | Arrow decal | Speed / contested overlay |
+| `bodega_cat` | Kenney character with tint | Custom mascot optional | Flavor mascot |
 
-All frames use the **east-facing (`_E`)** isometric variant for consistency. Source tiles are 256×512 px; atlas scales to **128×256** for reasonable load size.
-
-> **Note:** `bodega_cat` is a tinted character stand-in until custom cat art lands. Gameplay does not depend on it.
+Tokens intentionally remain colored circles in the Phaser scene for readability.
 
 ---
 
 ## Rebuilding the atlas
 
-Dev-only tooling lives in `public/assets/_source/` (not required at runtime).
+Dev-only tooling lives in `public/assets/_source/` and is not required at
+runtime.
+
+Kenney fallback:
 
 1. Download `Prototype Pack (2.3).zip` into `public/assets/_source/kenney.zip`
 2. `pip install pillow`
+3. `python public/assets/_source/pack_atlas.py`
+
+MegaKit renders:
+
+1. Copy PNGs from the outer pipeline into `public/assets/_source/renders/`
+2. Ensure required files are named `{frame_key}.png`
 3. `python public/assets/_source/pack_atlas.py`
 
 Outputs overwrite `public/assets/game.png` and `public/assets/game.json`.
@@ -77,4 +103,5 @@ Outputs overwrite `public/assets/game.png` and `public/assets/game.json`.
 
 ## Audio
 
-Not included in Dev D. Future CC0 candidates: Kenney impact/interface packs, freesound.org (per-file license check).
+Not included in Dev D. Future CC0 candidates: Kenney impact/interface packs,
+freesound.org (per-file license check).

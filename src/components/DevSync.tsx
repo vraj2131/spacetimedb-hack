@@ -84,7 +84,7 @@ export function DevSync() {
           <p className="eyebrow">Renderer Stack</p>
           <h2>Phaser board canvas</h2>
           <p>
-            The live canvas below renders the empty 12x8 board grid. React owns
+            The live canvas below renders the empty 28x20 board grid. React owns
             SpacetimeDB and feeds Phaser a frozen RenderState snapshot; Phaser only draws.
           </p>
           <PhaserGame />

@@ -10,7 +10,7 @@ export function BoardShell({ children }: BoardShellProps) {
       <div className="mb-3 flex items-center justify-between gap-3 text-white">
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-teal-300">Board</p>
-          <h2 className="text-lg font-black">12 x 8 turf grid</h2>
+          <h2 className="text-lg font-black">28 x 20 turf grid</h2>
         </div>
         <span className="rounded-md border border-slate-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-slate-300">
           Phaser
