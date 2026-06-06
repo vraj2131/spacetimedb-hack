@@ -53,12 +53,12 @@ test('Dev E adapter exposes backend handoff view models and actions', () => {
   }
 });
 
-test('App preserves the dev scaffold while exposing the Dev E screen flow', () => {
+test('App defaults to Join while keeping the dev scaffold reachable', () => {
   const app = read('src/App.tsx');
 
-  assert.match(app, /useState<Screen>\('dev'\)/);
+  assert.match(app, /useState<Screen>\('join'\)/);
   assert.match(app, /useLiveGameState/);
-  assert.match(app, /navigateToJoin/);
+  assert.match(app, /onReturnToDev/);
   assert.match(app, /<DevSync/);
   assert.match(app, /Start Bodega Blitz/);
 });

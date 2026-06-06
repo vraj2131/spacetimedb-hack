@@ -18,8 +18,13 @@ export function Scoreboard({ title, ...props }: ScoreboardProps) {
   return (
     <section className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm">
       <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
-        {title ?? (props.mode === 'live' ? 'Live standings (income + pickups)' : 'Final standings')}
+        {title ?? (props.mode === 'live' ? 'Live standings (stash)' : 'Final standings')}
       </p>
+      {props.mode === 'results' ? (
+        <p className="mt-1 text-[11px] font-semibold leading-snug text-slate-500">
+          Income = auto tile cash · Pickups = cash bundles · Bonus = territory at the whistle
+        </p>
+      ) : null}
       <div className="mt-3 grid gap-2">
         {props.entries.length === 0 ? (
           <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-sm font-semibold text-slate-600">
@@ -37,9 +42,14 @@ export function Scoreboard({ title, ...props }: ScoreboardProps) {
                     className="h-3 w-3 shrink-0 rounded-full border border-white"
                     style={{ backgroundColor: entry.color }}
                   />
-                  <span className="truncate font-bold text-slate-900">{entry.name}</span>
+                  <div className="min-w-0">
+                    <span className="truncate font-bold text-slate-900">{entry.name}</span>
+                    <p className="text-[11px] font-semibold text-slate-500">
+                      {entry.tilesOwned} tiles · +${entry.incomePerSecond}/sec
+                    </p>
+                  </div>
                 </div>
-                <span className="font-black text-slate-900">{entry.score}</span>
+                <span className="font-black text-slate-900">${entry.score}</span>
               </div>
             ))
         ) : (
@@ -58,9 +68,9 @@ export function Scoreboard({ title, ...props }: ScoreboardProps) {
                   <span className="text-lg font-black text-slate-900">{entry.total}</span>
                 </div>
                 <div className="mt-2 grid grid-cols-3 gap-2 text-xs font-semibold text-slate-600">
-                  <span>Tiles {entry.territory}</span>
-                  <span>Cash {entry.pickups}</span>
-                  <span>Bonus {entry.bonus}</span>
+                  <span>Income ${entry.territory}</span>
+                  <span>Pickups ${entry.pickups}</span>
+                  <span>Bonus ${entry.bonus}</span>
                 </div>
               </div>
             ))

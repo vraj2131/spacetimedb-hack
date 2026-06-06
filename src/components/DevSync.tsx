@@ -4,43 +4,81 @@ import { DbConnection, tables } from '../module_bindings';
 import { PhaserGame } from '../game/PhaserGame';
 
 /**
- * DevSync — the temporary scaffold round-trip screen.
+ * DevSync — scaffold round-trip screen using the real game schema.
  *
- * Holds the `sync_state` proof (connect -> read shared value -> call
- * `set_value` -> watch it sync across tabs) and mounts the live Phaser canvas
- * beside it. This is the Phase 0 baseline; it gets removed once the real game
- * screens (Join/Lobby/Match/...) take over.
+ * Proves connect → subscribe → reducer → cross-tab sync via `rooms` and
+ * `players` instead of the retired `sync_state` table.
  */
 export function DevSync() {
-  const [nextValue, setNextValue] = useState('');
+  const [devName, setDevName] = useState('Dev');
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const connState = useSpacetimeDB();
   const conn = connState.getConnection() as DbConnection | null;
   const { identity, isActive: connected } = connState;
-  const [syncRows] = useTable(tables.sync_state);
+  const [rooms] = useTable(tables.rooms);
+  const [players] = useTable(tables.players);
 
-  const syncValue = useMemo(() => syncRows.find(row => row.id === 1), [syncRows]);
-  const displayValue = syncValue?.value ?? 'Waiting for sync_state row...';
-  const updatedBy = syncValue?.updatedBy ?? 'none';
+  const localPlayer = useMemo(() => {
+    if (!identity) {
+      return undefined;
+    }
+    const localIdentityHex = identity.toHexString();
+    return players.find(player => player.identity.toHexString() === localIdentityHex);
+  }, [identity, players]);
 
-  const submitValue = (event: FormEvent<HTMLFormElement>) => {
+  const localRoom = useMemo(() => {
+    if (!localPlayer || localPlayer.roomId === 0) {
+      return null;
+    }
+    return rooms.find(room => room.id === localPlayer.roomId) ?? null;
+  }, [localPlayer, rooms]);
+
+  const sortedRooms = useMemo(
+    () => [...rooms].sort((left, right) => left.id - right.id),
+    [rooms],
+  );
+
+  const createTestRoom = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!connected || nextValue.trim().length === 0) {
+    if (!connected || !conn || isSubmitting) {
       return;
     }
 
-    conn?.reducers.setValue({ value: nextValue });
-    setNextValue('');
+    const name = devName.trim();
+    if (name.length === 0) {
+      setActionError('Enter a nickname first.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setActionError(null);
+    try {
+      if (!localPlayer) {
+        await conn.reducers.registerPlayer({ name, role: 'player' });
+        await conn.reducers.createRoom({});
+        return;
+      }
+      if (localPlayer.roomId === 0) {
+        await conn.reducers.createRoom({});
+      }
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Action failed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <main className="shell">
       <section className="panel">
         <header>
-          <p className="eyebrow">Bodega Blitz Phase 0</p>
-          <h1>Shared Scaffold Baseline</h1>
+          <p className="eyebrow">Bodega Blitz Slice 2</p>
+          <h1>Room sync baseline</h1>
           <p className="intro">
-            This temporary screen proves the team can install dependencies, connect to
-            SpacetimeDB locally, and verify shared state before gameplay work begins.
+            Create a room in one tab and watch the subscribed room list update in
+            another. This uses the same `rooms` / `players` tables as the live game
+            flow.
           </p>
         </header>
 
@@ -55,41 +93,68 @@ export function DevSync() {
             <dt>Identity</dt>
             <dd>{identity?.toHexString().slice(0, 12) ?? 'pending'}</dd>
           </div>
+          <div>
+            <dt>Subscribed rooms</dt>
+            <dd>{rooms.length}</dd>
+          </div>
+          <div>
+            <dt>Subscribed players</dt>
+            <dd>{players.length}</dd>
+          </div>
         </dl>
 
         <div className="value-box" data-testid="synced-value">
-          <span>Synced value</span>
-          <strong>{displayValue}</strong>
-          <small>Last update: {updatedBy.slice(0, 16)}</small>
+          <span>Your room</span>
+          <strong>{localRoom?.code ?? 'Not in a room yet'}</strong>
+          <small>
+            {localPlayer
+              ? `${localPlayer.name} · roomId ${localPlayer.roomId}`
+              : 'Register below to join the sync proof'}
+          </small>
         </div>
 
-        <form onSubmit={submitValue} className="sync-form">
-          <label htmlFor="next-value">Set shared value</label>
+        <form onSubmit={createTestRoom} className="sync-form">
+          <label htmlFor="dev-name">Dev nickname</label>
           <div>
             <input
-              id="next-value"
-              value={nextValue}
-              onChange={event => setNextValue(event.target.value)}
-              placeholder="Type in one tab, watch the other update"
-              maxLength={80}
-              disabled={!connected}
+              id="dev-name"
+              value={devName}
+              onChange={event => setDevName(event.target.value)}
+              placeholder="Create a room in one tab, watch the other update"
+              maxLength={32}
+              disabled={!connected || isSubmitting}
             />
-            <button type="submit" disabled={!connected || nextValue.trim().length === 0}>
-              Sync
+            <button
+              type="submit"
+              disabled={!connected || isSubmitting || devName.trim().length === 0}
+            >
+              {localPlayer?.roomId ? 'Already seated' : 'Create room'}
             </button>
           </div>
         </form>
+
+        {actionError ? <p className="intro bad">{actionError}</p> : null}
+
+        <div className="value-box">
+          <span>Live room codes</span>
+          <strong>
+            {sortedRooms.length > 0
+              ? sortedRooms.map(room => room.code).join(', ')
+              : 'No rooms yet'}
+          </strong>
+          <small>Open a second tab and create a room to verify cross-tab sync.</small>
+        </div>
 
         <section className="phaser-panel" aria-label="Phaser board canvas">
           <p className="eyebrow">Renderer Stack</p>
           <h2>Phaser board canvas</h2>
           <p>
-            The live canvas below renders the empty 12x8 board grid. React owns
-            SpacetimeDB and feeds Phaser a frozen RenderState snapshot; Phaser only draws.
+            The live canvas below renders the board grid. React owns SpacetimeDB and
+            feeds Phaser a frozen RenderState snapshot; Phaser only draws.
           </p>
           <PhaserGame />
         </section>
       </section>
     </main>
   );
-}
+};

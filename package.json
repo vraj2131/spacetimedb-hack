@@ -11,12 +11,13 @@
     "test:scaffold": "node scripts/check-roundtrip-scaffold.mjs",
     "test:unit": "node --experimental-strip-types --test tests/*.test.mjs",
     "test:integration": "node scripts/run-integration.mjs",
-    "spacetime:generate": "spacetime generate --lang typescript --out-dir src/module_bindings --module-path spacetimedb",
+    "spacetime:generate": "spacetime generate --lang typescript --out-dir src/module_bindings --module-path spacetimedb --yes",
     "spacetime:status:local": "node scripts/spacetime-status-local.mjs",
     "spacetime:kill:local": "node scripts/spacetime-kill-local.mjs",
     "spacetime:publish:local": "node scripts/publish-local.mjs",
     "spacetime:reset:local": "spacetime delete bodega-blitz --server local --yes && node scripts/publish-local.mjs",
-    "spacetime:publish": "spacetime publish bodega-blitz --module-path spacetimedb --server maincloud"
+    "spacetime:publish": "spacetime publish bodega-blitz --module-path spacetimedb --server maincloud",
+    "smoke:leave-close": "node --import tsx scripts/smoke-leave-close.mjs"
   },
   "dependencies": {
     "phaser": "^4.1.0",

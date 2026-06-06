@@ -14,7 +14,7 @@ is merged** (L2A–L2C): Join/Lobby/Match/Results call live reducers, `useLiveGa
 drives the screens, and Match passes a live `RenderState` into Phaser. **Browser smoke and
 a manual two-client demo are the next verification gate** — see [docs/M1_SMOKE_TEST.md](docs/M1_SMOKE_TEST.md).
 
-- The temporary `sync_state` round-trip baseline remains in Dev sync for scaffold proof.
+- Dev sync proves room/player subscription sync via `rooms` + `players` (see `DevSync.tsx`).
 - **Backend contract (historical): [docs/BACKEND_HANDOFF.md](docs/BACKEND_HANDOFF.md).**
 
 This repo ships with a **Maincloud-default app target**. Local SpacetimeDB remains the recommended developer iteration path.
@@ -168,7 +168,7 @@ Each teammate should post in the team channel:
 - `src/` holds the current Vite React client
 - `src/module_bindings/` is generated and should not be edited by hand
 - `src/game/` renders the isometric 28×20 board (BoardScene + EventBus) from `RenderState`; Match uses live projected state; Dev sync still mounts the mock for scaffold proof
-- keep the `sync_state` proof in Dev sync; the live game flow uses `useLiveGameState`
+- Dev sync proves room/player subscription sync via `rooms` + `players`; the live game flow uses `useLiveGameState`
 
 ## Troubleshooting
 

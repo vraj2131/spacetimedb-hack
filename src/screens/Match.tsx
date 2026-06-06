@@ -57,6 +57,7 @@ export function MatchScreen({
   const canPlay = !viewModel.isSpectator && viewModel.roomState === 'live';
   const [spectatorTarget, setSpectatorTarget] = useState<string | null>(null);
   const [tileActionMode, setTileActionMode] = useState<TileActionMode>('claim');
+  const [awaitingTileClick, setAwaitingTileClick] = useState(false);
 
   const localToken = renderState.tokens.find(token => token.playerId === localPlayerId);
 
@@ -67,6 +68,7 @@ export function MatchScreen({
       return;
     }
     if (!canPlay) return;
+    setAwaitingTileClick(false);
     if (tileActionMode === 'contest') {
       actions.onContestTileAt(x, y);
       return;
@@ -74,16 +76,29 @@ export function MatchScreen({
     actions.onClaimTileAt(x, y);
   };
 
+  const selectTileActionMode = (mode: TileActionMode) => {
+    setTileActionMode(mode);
+    setAwaitingTileClick(true);
+  };
+
   const handleCollect = () => {
-    if (!canPlay || !viewModel.canCollectPickup || !localToken) return;
+    if (!canPlay || !localToken || !viewModel.canCollectPickup) return;
     actions.onCollectPickupAt(localToken.x, localToken.y);
   };
 
   const actionHint = viewModel.isSpectator
     ? 'Spectator watch mode'
     : tileActionMode === 'contest'
-      ? 'Contest mode — click an adjacent enemy tile'
-      : 'Claim mode — click an adjacent open tile';
+      ? 'Contest mode — click an enemy tile next to your token on the map'
+      : 'Claim mode — click an empty tile next to your token on the map';
+
+  const tileActionSteps = viewModel.isSpectator
+    ? null
+    : awaitingTileClick
+      ? tileActionMode === 'contest'
+        ? 'Step 2: Click the map — enemy-owned tile adjacent to your token.'
+        : 'Step 2: Click the map — empty tile adjacent to your token.'
+      : 'Step 1: Choose Claim or Contest, then click the map. Tile income accrues automatically.';
 
   return (
     <main className="match-screen min-h-screen bg-slate-950 p-3 text-white">
@@ -131,8 +146,8 @@ export function MatchScreen({
                 {viewModel.actionStatusLabel ? (
                   <p className="mt-1 text-xs font-semibold text-rose-300">{viewModel.actionStatusLabel}</p>
                 ) : null}
-                {!viewModel.isSpectator ? (
-                  <p className="mt-1 text-xs font-semibold text-yellow-100/85">{viewModel.claimHint}</p>
+                {!viewModel.isSpectator && tileActionSteps ? (
+                  <p className="mt-1 text-xs font-semibold text-yellow-100/85">{tileActionSteps}</p>
                 ) : null}
               </div>
               <div className="flex flex-wrap gap-2">
@@ -164,9 +179,9 @@ export function MatchScreen({
             {canPlay ? (
               <>
                 <div className="mt-2 rounded-md border border-emerald-400/40 bg-emerald-900/30 px-3 py-2 text-center text-xs font-black uppercase text-emerald-100">
-                  <p>Cash stash: ${viewModel.localCash}</p>
+                  <p>Cash stash: ${viewModel.localCash} total</p>
                   <p className="mt-1 text-[10px] font-semibold normal-case text-emerald-200/90">
-                    Tile income ${viewModel.localTileIncome} + pickups ${viewModel.localPickupCash}
+                    {viewModel.localTilesOwned} tiles · tile income ${viewModel.localTileIncome} · pickups ${viewModel.localPickupCash} · +${viewModel.localIncomePerSecond}/sec
                   </p>
                 </div>
                 {viewModel.localPlayerEffects.stunned && (
@@ -183,21 +198,21 @@ export function MatchScreen({
                   <button
                     type="button"
                     className={actionModeButtonClass(tileActionMode === 'claim')}
-                    onClick={() => setTileActionMode('claim')}
+                    onClick={() => selectTileActionMode('claim')}
                   >
-                    Claim
+                    Claim mode
                   </button>
                   <button
                     type="button"
                     className={actionModeButtonClass(tileActionMode === 'contest')}
-                    onClick={() => setTileActionMode('contest')}
+                    onClick={() => selectTileActionMode('contest')}
                   >
-                    Contest
+                    Contest mode
                   </button>
                   <button
                     type="button"
                     className={overlayButtonClass}
-                    disabled={!viewModel.canCollectPickup}
+                    disabled={!viewModel.canCollect}
                     onClick={handleCollect}
                   >
                     Collect

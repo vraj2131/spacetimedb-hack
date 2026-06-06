@@ -10,7 +10,6 @@ import { existsSync, readFileSync } from 'node:fs';
  */
 
 const EXPECTED_TABLES = [
-  'sync_state',
   'rooms',
   'players',
   'player_state',
@@ -24,9 +23,10 @@ const EXPECTED_TABLES = [
 ];
 
 const EXPECTED_REDUCERS = [
-  'set_value',
   'create_room',
   'join_room',
+  'leave_room',
+  'close_room',
   'start_round',
   'end_round',
   'rematch',
@@ -71,8 +71,9 @@ test('generated bindings export tables and DbConnection for the client', () => {
   assert.match(index, /export class DbConnection/);
 });
 
-test('DevSync can import sync_state from generated tables', () => {
+test('DevSync subscribes to game tables for the round-trip proof', () => {
   const devSync = readFileSync('src/components/DevSync.tsx', 'utf8');
-  assert.match(devSync, /tables\.sync_state/);
-  assert.match(devSync, /conn\?\.reducers\.setValue/);
+  assert.match(devSync, /tables\.rooms/);
+  assert.match(devSync, /tables\.players/);
+  assert.match(devSync, /conn\.reducers\.createRoom/);
 });

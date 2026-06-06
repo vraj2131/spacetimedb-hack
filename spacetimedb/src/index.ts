@@ -12,7 +12,7 @@ import spacetimedb from './schema';
 export default spacetimedb;
 
 // Dev / scaffold (temporary round-trip proof + lifecycle hooks).
-export { init, onConnect, onDisconnect, setValue } from './reducers.dev';
+export { init, onConnect, onDisconnect } from './reducers.dev';
 
 // Room lifecycle.
 export {

@@ -101,6 +101,7 @@ export const createRoom = spacetimedb.reducer({ name: 'create_room' }, ctx => {
     startsAtMs: 0n,
     endsAtMs: 0n,
     createdAtMs: nowMs,
+    lastTickAtMs: 0n,
   });
 
   ctx.db.players.id.update({ ...caller, roomId: room.id });
@@ -281,6 +282,7 @@ export const startRound = spacetimedb.reducer(
       state: 'live',
       startsAtMs: nowMs,
       endsAtMs: nowMs + ROUND_DURATION_MS,
+      lastTickAtMs: 0n,
     });
     scheduleNextTick(ctx, roomId);
   }
@@ -328,8 +330,8 @@ export const rematch = spacetimedb.reducer(
     ctx.db.events.roomId.delete(roomId);
     ctx.db.round_results.roomId.delete(roomId);
     ctx.db.pickups.roomId.delete(roomId);
-
     ctx.db.taunts.roomId.delete(roomId);
+    ctx.db.round_tick.roomId.delete(roomId);
     const spectators = [...ctx.db.spectator_state.roomId.filter(roomId)];
     for (const spec of spectators) {
       ctx.db.spectator_state.playerId.update({ ...spec, energy: 10, lastActionAtMs: 0n });

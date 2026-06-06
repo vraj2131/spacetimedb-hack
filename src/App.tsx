@@ -17,13 +17,11 @@ export interface ScreenProps {
 }
 
 /**
- * Live router.
- *
- * Keeps the Phase 0 `dev` scaffold as the default entry, then auto-routes game
- * screens from subscribed room state once the player leaves `dev` / `judge`.
+ * Live router. Defaults to Join; Dev scaffold and Judge stay reachable via
+ * explicit navigation.
  */
 function App() {
-  const [screen, setScreen] = useState<Screen>('dev');
+  const [screen, setScreen] = useState<Screen>('join');
   const { gameUiState, renderState, localPlayerId, actions: liveActions } = useLiveGameState();
   const prevRoomIdRef = useRef<number | null>(null);
   const prevRoomStateRef = useRef<GameUiState['roomState'] | null>(null);
