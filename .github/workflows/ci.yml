@@ -43,7 +43,7 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: SpacetimeDB CLI version
-        run: spacetime version
+        run: spacetime --version
 
       # Bindings are generated, not committed (see .gitignore). Building the
       # module + regenerating must happen before tsc / vite build.
