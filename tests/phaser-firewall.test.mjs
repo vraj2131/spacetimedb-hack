@@ -46,3 +46,12 @@ test('EventBus exposes renderState and tile click events', () => {
   assert.match(eventBus, /tile:click/);
   assert.match(eventBus, /GAME_EVENT_NAMES/);
 });
+
+test('PhaserGame exposes camera mode without changing RenderState', () => {
+  const phaserGame = readFileSync('src/game/PhaserGame.tsx', 'utf8');
+  assert.match(phaserGame, /cameraMode/);
+  assert.match(phaserGame, /localPlayerId/);
+
+  const renderState = readFileSync('src/renderState.ts', 'utf8');
+  assert.doesNotMatch(renderState, /gridW|gridH|localPlayerId|cameraMode/);
+});
