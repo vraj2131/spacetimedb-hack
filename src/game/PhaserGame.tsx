@@ -3,7 +3,8 @@ import Phaser from 'phaser';
 import type { RenderState } from '../renderState';
 import { EventBus } from './EventBus';
 import { MOCK_RENDER_STATE } from './mockRenderState';
-import { BoardScene, TILE_PX } from './scenes/BoardScene';
+import { BoardScene, type CameraMode } from './scenes/BoardScene';
+import { DEFAULT_VIEWPORT_HEIGHT, DEFAULT_VIEWPORT_WIDTH } from './projection';
 
 /**
  * React <-> Phaser mount point.
@@ -14,41 +15,59 @@ import { BoardScene, TILE_PX } from './scenes/BoardScene';
  */
 export function PhaserGame({
   renderState = MOCK_RENDER_STATE,
+  cameraMode = 'follow',
+  localPlayerId,
+  viewportWidth = DEFAULT_VIEWPORT_WIDTH,
+  viewportHeight = DEFAULT_VIEWPORT_HEIGHT,
 }: {
   renderState?: RenderState;
+  cameraMode?: CameraMode;
+  localPlayerId?: number;
+  viewportWidth?: number;
+  viewportHeight?: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const gameRef = useRef<Phaser.Game | null>(null);
 
   useEffect(() => {
     const parent = containerRef.current;
     if (!parent) return;
 
-    const { width, height } = renderState;
-
     const game = new Phaser.Game({
       type: Phaser.AUTO,
       parent,
-      width: width * TILE_PX,
-      height: height * TILE_PX,
-      backgroundColor: '#1d1f24',
-      scene: [BoardScene],
+      width: viewportWidth,
+      height: viewportHeight,
+      backgroundColor: '#142033',
+      scene: [new BoardScene({ cameraMode, localPlayerId })],
+      scale: {
+        mode: Phaser.Scale.NONE,
+      },
     });
 
-    // Prime the bus before the scene boots so create() replays this snapshot.
-    EventBus.emit('renderState:update', renderState);
+    gameRef.current = game;
 
     const offTileClick = EventBus.on('tile:click', ({ x, y }) => {
       console.info('[PhaserGame] tile:click', { x, y });
     });
 
+    EventBus.emit('renderState:update', renderState);
+
     return () => {
       offTileClick();
+      gameRef.current = null;
       game.destroy(true);
     };
     // Rebuild the game only when board dimensions change (rare). Per-frame
     // RenderState updates flow through EventBus, not a remount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [renderState.width, renderState.height]);
+  }, [cameraMode, localPlayerId, renderState.width, renderState.height]);
+
+  useEffect(() => {
+    const game = gameRef.current;
+    if (!game) return;
+    game.scale.resize(viewportWidth, viewportHeight);
+  }, [viewportWidth, viewportHeight]);
 
   useEffect(() => {
     EventBus.emit('renderState:update', renderState);

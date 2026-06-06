@@ -7,10 +7,15 @@ import {
 } from '../renderState';
 
 function tileTypeAt(x: number, y: number): RenderTileType {
-  if (x >= 4 && x <= 7 && y >= 2 && y <= 5) {
+  if (x >= 10 && x <= 17 && y >= 6 && y <= 13) {
     return 'bodega';
   }
-  if ((x === 0 || x === MAP_WIDTH - 1) && y === Math.floor(MAP_HEIGHT / 2)) {
+  if (
+    (x === 0 && y === 0) ||
+    (x === MAP_WIDTH - 1 && y === 0) ||
+    (x === 0 && y === MAP_HEIGHT - 1) ||
+    (x === MAP_WIDTH - 1 && y === MAP_HEIGHT - 1)
+  ) {
     return 'alley';
   }
   return 'street';
@@ -24,10 +29,10 @@ function buildMockTiles(): RenderTile[] {
         x,
         y,
         type: tileTypeAt(x, y),
-        ownerColor: x === 2 && y === 2 ? '#e74c3c' : null,
-        contested: x === 6 && y === 4,
-        shielded: x === 5 && y === 3,
-        spilled: x === 3 && y === 6,
+        ownerColor: x === 4 && y === 4 ? '#e74c3c' : null,
+        contested: x === 14 && y === 10,
+        shielded: x === 12 && y === 8,
+        spilled: x === 8 && y === 12,
       });
     }
   }
@@ -48,6 +53,17 @@ export const MOCK_RENDER_STATE: RenderState = {
       boosted: true,
       disabled: false,
     },
+    {
+      playerId: 1,
+      x: 26,
+      y: 18,
+      color: '#f97316',
+      boosted: false,
+      disabled: false,
+    },
   ],
-  pickups: [{ x: 6, y: 4, type: 'cash' }],
+  pickups: [
+    { x: 14, y: 10, type: 'cash' },
+    { x: 7, y: 6, type: 'coffee' },
+  ],
 };
