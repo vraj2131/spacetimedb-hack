@@ -2,7 +2,7 @@
 
 Living progress tracker for the project. Check items off as they land (`- [x]`). Leave pending items unchecked (`- [ ]`).
 
-Last updated: June 6, 2026
+Last updated: June 6, 2026 (Wave 0 — Dev A spine: schema split, render contract, router, Tailwind)
 
 ---
 
@@ -35,15 +35,15 @@ Goal: every teammate can clone, connect locally, and prove shared state sync bef
 ### Renderer stack (early install)
 
 - [x] `phaser@4.1.0` installed
-- [x] Phaser import verified in client (`PhaserPlaceholder`)
-- [ ] `PhaserGame.tsx` mounts a live Phaser canvas
+- [x] Phaser import verified in client (`DevSync` mounts `PhaserGame`)
+- [x] `PhaserGame.tsx` mounts a live Phaser canvas
 - [ ] React ↔ Phaser `EventBus` bridge
 
 ### Styling
 
-- [ ] Tailwind CSS v4 via `@tailwindcss/vite`
-- [ ] `@import "tailwindcss";` in main CSS
-- [x] Interim custom CSS for Phase 0 UI (until Tailwind lands)
+- [x] Tailwind CSS v4 via `@tailwindcss/vite`
+- [x] `@import "tailwindcss";` in main CSS
+- [x] Interim custom CSS for Phase 0 UI (kept beneath the Tailwind import)
 
 ### Documentation
 
@@ -72,15 +72,15 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 
 - [x] One Vite app on SpacetimeDB template (not Phaser template)
 - [x] Phaser added as a library dependency
-- [ ] Tailwind v4 wired into Vite
-- [ ] Empty `PhaserGame` canvas beside React shell
-- [ ] One Maincloud publish succeeds
+- [x] Tailwind v4 wired into Vite
+- [x] Empty `PhaserGame` canvas beside React shell
+- [ ] One Maincloud publish succeeds (local publish verified)
 
 ### Slice 2 — Room sync
 
-- [ ] Game schema replaces `sync_state` (`rooms`, `players`, `player_state`, `tiles`, …)
-- [ ] `register_player`, `create_room`, `join_room`, `start_round` reducers
-- [ ] `spacetimedb/src/map.ts` — 12×8 layout + spawn corners
+- [ ] Game schema replaces `sync_state` (`rooms`, `players`, `player_state`, `tiles`, …) — _tables scaffolded alongside `sync_state`; `sync_state` still drives the dev round-trip_
+- [ ] `register_player`, `create_room`, `join_room`, `start_round` reducers — _signatures scaffolded; bodies throw `not implemented`_
+- [ ] `spacetimedb/src/map.ts` — 12×8 layout + spawn corners — _stub: dimensions + spawn corners present; full layout pending_
 - [ ] Join screen (nickname, role, optional room code)
 - [ ] Lobby screen (code, roster, host start button)
 - [ ] Phaser draws 12×8 grid as colored rectangles

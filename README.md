@@ -78,7 +78,9 @@ What the baseline proves right now:
 - the React client connects
 - the reducer can mutate shared state
 - subscriptions update across tabs
-- Phaser is installed and available for the next slice
+- the Phaser board canvas mounts live beside the round-trip proof
+- the full game schema, reducer stubs (throwing `not implemented`), screen
+  router, and Tailwind v4 are scaffolded for the gameplay slices
 
 ## Maincloud Smoke Test Flow
 
