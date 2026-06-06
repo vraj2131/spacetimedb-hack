@@ -25,8 +25,8 @@ type BoardSceneConfig = {
 };
 
 type TileCell = {
-  readonly base: Phaser.GameObjects.Polygon;
-  readonly overlay: Phaser.GameObjects.Polygon;
+  readonly base: Phaser.GameObjects.Polygon | Phaser.GameObjects.Image;
+  readonly overlay: Phaser.GameObjects.Polygon | Phaser.GameObjects.Image;
 };
 
 type TokenSprite = {
@@ -35,7 +35,7 @@ type TokenSprite = {
   readonly outline: Phaser.GameObjects.Arc;
 };
 
-type PickupSprite = Phaser.GameObjects.Polygon;
+type PickupSprite = Phaser.GameObjects.Polygon | Phaser.GameObjects.Image;
 
 type SceneryBody = Phaser.GameObjects.GameObject & {
   destroy(fromScene?: boolean): void;
@@ -74,6 +74,20 @@ const DIAMOND_POINTS = [
 const SMALL_DIAMOND_POINTS = [0, -7, 13, 0, 0, 7, -13, 0];
 const TOKEN_BODY_OFFSET_Y = -24;
 const PICKUP_OFFSET_Y = -4;
+const ATLAS_KEY = 'game';
+const TILE_SPRITE_SCALE = TILE_WIDTH / 128;
+const PICKUP_SPRITE_SCALE = 0.22;
+const FX_SPRITE_SCALE = TILE_WIDTH / 128;
+/** Kenney frames anchor at the tile footprint bottom; gridToPixel returns diamond center. */
+const TILE_SPRITE_ORIGIN_X = 0.5;
+const TILE_SPRITE_ORIGIN_Y = 1;
+const TILE_SPRITE_FOOT_OFFSET_Y = TILE_HEIGHT / 2;
+
+function isImage(
+  object: Phaser.GameObjects.GameObject,
+): object is Phaser.GameObjects.Image {
+  return object instanceof Phaser.GameObjects.Image;
+}
 
 function tileKey(x: number, y: number): string {
   return `${x},${y}`;
@@ -85,6 +99,21 @@ function pickupKey(pickup: RenderPickup): string {
 
 function parseColor(color: string): number {
   return Phaser.Display.Color.HexStringToColor(color).color;
+}
+
+function tileFrameKey(type: RenderTileType): string {
+  return `tile_${type}`;
+}
+
+function pickupFrameKey(type: RenderPickup['type']): string {
+  return `pickup_${type}`;
+}
+
+function fxFrameKey(tile: RenderTile): string | null {
+  if (tile.spilled) return 'fx_spill';
+  if (tile.shielded) return 'fx_shield';
+  if (tile.contested) return 'fx_speed';
+  return null;
 }
 
 function decorationKind(tile: RenderTile): 'tree' | 'hydrant' | 'newsstand' | 'building' | null {
@@ -109,6 +138,7 @@ export class BoardScene extends Phaser.Scene {
   private gridLines: Phaser.GameObjects.Graphics | null = null;
   private skyline: Phaser.GameObjects.Graphics | null = null;
   private frame: Phaser.GameObjects.Graphics | null = null;
+  private atlasReady = false;
   private unsubscribeRenderState: (() => void) | null = null;
   private pendingRenderState: RenderState | null = null;
   private applyScheduled = false;
@@ -126,7 +156,16 @@ export class BoardScene extends Phaser.Scene {
     this.localPlayerId = localPlayerId;
   }
 
+  preload(): void {
+    this.load.atlas('game', 'assets/game.png', 'assets/game.json');
+    this.load.on('loaderror', () => {
+      this.atlasReady = false;
+    });
+  }
+
   create(): void {
+    this.atlasReady = this.textures.exists('game');
+
     this.unsubscribeRenderState = EventBus.on('renderState:update', state => {
       this.scheduleApplyRenderState(state);
     });
@@ -276,12 +315,25 @@ export class BoardScene extends Phaser.Scene {
       for (let x = 0; x < state.width; x++) {
         const { px, py } = gridToPixel(x, y, origin);
         const depth = depthForGrid(x, y);
-        const base = this.add
-          .polygon(px, py, DIAMOND_POINTS, TILE_FILL.street)
-          .setDepth(depth);
-        const overlay = this.add
-          .polygon(px, py - 1, DIAMOND_POINTS, 0xffffff, 0)
-          .setDepth(depth + 1);
+        const base = this.atlasReady
+          ? this.add
+              .image(px, py + TILE_SPRITE_FOOT_OFFSET_Y, ATLAS_KEY, 'tile_street')
+              .setOrigin(TILE_SPRITE_ORIGIN_X, TILE_SPRITE_ORIGIN_Y)
+              .setScale(TILE_SPRITE_SCALE)
+              .setDepth(depth)
+          : this.add
+              .polygon(px, py, DIAMOND_POINTS, TILE_FILL.street)
+              .setDepth(depth);
+        const overlay = this.atlasReady
+          ? this.add
+              .image(px, py + TILE_SPRITE_FOOT_OFFSET_Y, ATLAS_KEY, 'fx_spill')
+              .setOrigin(TILE_SPRITE_ORIGIN_X, TILE_SPRITE_ORIGIN_Y)
+              .setScale(FX_SPRITE_SCALE)
+              .setAlpha(0)
+              .setDepth(depth + 1)
+          : this.add
+              .polygon(px, py - 1, DIAMOND_POINTS, 0xffffff, 0)
+              .setDepth(depth + 1);
         this.tileCells.set(tileKey(x, y), { base, overlay });
       }
     }
@@ -342,10 +394,29 @@ export class BoardScene extends Phaser.Scene {
       const cell = this.tileCells.get(key);
       if (!cell) continue;
 
-      const fill = tile.ownerColor ? parseColor(tile.ownerColor) : TILE_FILL[tile.type];
-      cell.base.setFillStyle(fill, tile.ownerColor ? 0.88 : 1);
+      if (isImage(cell.base)) {
+        cell.base.setTexture(ATLAS_KEY, tileFrameKey(tile.type));
+        if (tile.ownerColor) {
+          cell.base.setTint(parseColor(tile.ownerColor));
+          cell.base.setAlpha(0.88);
+        } else {
+          cell.base.clearTint();
+          cell.base.setAlpha(1);
+        }
+      } else {
+        const fill = tile.ownerColor ? parseColor(tile.ownerColor) : TILE_FILL[tile.type];
+        cell.base.setFillStyle(fill, tile.ownerColor ? 0.88 : 1);
+      }
 
-      if (tile.contested) {
+      const fxFrame = fxFrameKey(tile);
+      if (isImage(cell.overlay)) {
+        if (fxFrame) {
+          cell.overlay.setTexture(ATLAS_KEY, fxFrame);
+          cell.overlay.setAlpha(0.42);
+        } else {
+          cell.overlay.setAlpha(0);
+        }
+      } else if (tile.contested) {
         cell.overlay.setFillStyle(0xe67e22, 0.42);
       } else if (tile.shielded) {
         cell.overlay.setFillStyle(0x34d399, 0.38);
@@ -358,8 +429,18 @@ export class BoardScene extends Phaser.Scene {
 
     for (const [key, cell] of this.tileCells) {
       if (seen.has(key)) continue;
-      cell.base.setFillStyle(TILE_FILL.street);
-      cell.overlay.setFillStyle(0xffffff, 0);
+      if (isImage(cell.base)) {
+        cell.base.setTexture(ATLAS_KEY, 'tile_street');
+        cell.base.clearTint();
+        cell.base.setAlpha(1);
+      } else {
+        cell.base.setFillStyle(TILE_FILL.street);
+      }
+      if (isImage(cell.overlay)) {
+        cell.overlay.setAlpha(0);
+      } else {
+        cell.overlay.setFillStyle(0xffffff, 0);
+      }
     }
   }
 
@@ -430,13 +511,32 @@ export class BoardScene extends Phaser.Scene {
       let sprite = this.pickupSprites.get(key);
 
       if (!sprite) {
-        sprite = this.add
-          .polygon(px, py + PICKUP_OFFSET_Y, [0, -9, 9, 0, 0, 9, -9, 0], PICKUP_FILL[pickup.type])
-          .setStrokeStyle(2, 0xfff4b8, 0.9);
+        sprite = this.atlasReady
+          ? this.add
+              .image(
+                px,
+                py + TILE_SPRITE_FOOT_OFFSET_Y + PICKUP_OFFSET_Y,
+                ATLAS_KEY,
+                pickupFrameKey(pickup.type),
+              )
+              .setOrigin(TILE_SPRITE_ORIGIN_X, TILE_SPRITE_ORIGIN_Y)
+              .setScale(PICKUP_SPRITE_SCALE)
+          : this.add
+              .polygon(
+                px,
+                py + PICKUP_OFFSET_Y,
+                [0, -9, 9, 0, 0, 9, -9, 0],
+                PICKUP_FILL[pickup.type],
+              )
+              .setStrokeStyle(2, 0xfff4b8, 0.9);
         this.pickupSprites.set(key, sprite);
       } else {
-        sprite.setPosition(px, py + PICKUP_OFFSET_Y);
-        sprite.setFillStyle(PICKUP_FILL[pickup.type]);
+        sprite.setPosition(px, py + TILE_SPRITE_FOOT_OFFSET_Y + PICKUP_OFFSET_Y);
+        if (isImage(sprite)) {
+          sprite.setTexture(ATLAS_KEY, pickupFrameKey(pickup.type));
+        } else {
+          sprite.setFillStyle(PICKUP_FILL[pickup.type]);
+        }
       }
 
       sprite.setDepth(depthForGrid(pickup.x, pickup.y, 70));
