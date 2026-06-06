@@ -18,12 +18,38 @@ const STEP: Record<string, { dx: number; dy: number }> = {
   right: { dx: 1, dy: 0 },
 };
 
+/** Player token colors, cycled by registration order. */
+const PLAYER_COLORS = ['#0f766e', '#dc2626', '#ca8a04', '#2563eb'];
+
 // register_player(name, role) -> create player; reject empty name.
 export const registerPlayer = spacetimedb.reducer(
   { name: 'register_player' },
   { name: t.string(), role: t.string() },
-  _ctx => {
-    throw new Error('not implemented: register_player');
+  (ctx, { name, role }) => {
+    const trimmed = name.trim();
+    if (trimmed === '') {
+      throw new Error('register_player: name must not be empty');
+    }
+    if (role !== 'player' && role !== 'spectator') {
+      throw new Error("register_player: role must be 'player' or 'spectator'");
+    }
+    // One registration per identity.
+    if ([...ctx.db.players.identity.filter(ctx.sender)][0]) {
+      throw new Error('register_player: caller is already registered');
+    }
+
+    const color = PLAYER_COLORS[Number(ctx.db.players.count()) % PLAYER_COLORS.length];
+
+    ctx.db.players.insert({
+      id: 0, // auto-increment
+      identity: ctx.sender,
+      roomId: 0, // not in a room yet
+      name: trimmed,
+      role,
+      color,
+      connected: true,
+      joinedAtMs: ctx.timestamp.toMillis(),
+    });
   }
 );
 

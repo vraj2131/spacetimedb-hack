@@ -20,17 +20,90 @@ import {
 /** Round length in milliseconds (90s per the brief). */
 const ROUND_DURATION_MS = 90_000n;
 
+/** Characters used for room join codes (uppercase alphanumeric). */
+const CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+const CODE_LENGTH = 6;
+
 // create_room() -> room in lobby; generate short code; set host identity.
-export const createRoom = spacetimedb.reducer({ name: 'create_room' }, _ctx => {
-  throw new Error('not implemented: create_room');
+export const createRoom = spacetimedb.reducer({ name: 'create_room' }, ctx => {
+  const caller = [...ctx.db.players.identity.filter(ctx.sender)][0];
+  if (!caller) {
+    throw new Error('create_room: caller is not a registered player');
+  }
+  if (caller.roomId !== 0) {
+    throw new Error('create_room: caller is already in a room');
+  }
+
+  const nowMs = ctx.timestamp.toMillis();
+
+  // Generate a 6-char code unique across existing rooms (retry on collision).
+  let code = '';
+  for (let attempt = 0; ; attempt++) {
+    if (attempt >= 20) {
+      throw new Error('create_room: could not generate a unique room code');
+    }
+    code = '';
+    for (let i = 0; i < CODE_LENGTH; i++) {
+      code += CODE_ALPHABET[ctx.random.integerInRange(0, CODE_ALPHABET.length - 1)];
+    }
+    if (!ctx.db.rooms.code.find(code)) {
+      break;
+    }
+  }
+
+  const room = ctx.db.rooms.insert({
+    id: 0, // auto-increment
+    code,
+    state: 'lobby',
+    hostIdentity: ctx.sender,
+    roundNumber: 1,
+    seed: ctx.random.bigintInRange(0n, 0xffff_ffff_ffff_ffffn),
+    startsAtMs: 0n,
+    endsAtMs: 0n,
+    createdAtMs: nowMs,
+  });
+
+  ctx.db.players.id.update({ ...caller, roomId: room.id });
 });
 
 // join_room(room_code) -> attach to room; reject if missing/full.
 export const joinRoom = spacetimedb.reducer(
   { name: 'join_room' },
   { roomCode: t.string() },
-  _ctx => {
-    throw new Error('not implemented: join_room');
+  (ctx, { roomCode }) => {
+    const code = roomCode.trim().toUpperCase();
+    const room = ctx.db.rooms.code.find(code);
+    if (!room) {
+      throw new Error('join_room: room not found');
+    }
+
+    const caller = [...ctx.db.players.identity.filter(ctx.sender)][0];
+    if (!caller) {
+      throw new Error('join_room: caller is not a registered player');
+    }
+    if (caller.roomId !== 0) {
+      throw new Error('join_room: caller is already in a room');
+    }
+
+    // Players can only join a lobby/results room with an open seat; spectators
+    // may join at any time (including a live round) to watch.
+    if (caller.role === 'player') {
+      if (room.state === 'live') {
+        throw new Error('join_room: round is in progress');
+      }
+      const seatedPlayers = [...ctx.db.players.roomId.filter(room.id)].filter(
+        p => p.role === 'player'
+      ).length;
+      if (seatedPlayers >= MAX_SPAWN_SEATS) {
+        throw new Error('join_room: room is full');
+      }
+    }
+
+    ctx.db.players.id.update({
+      ...caller,
+      roomId: room.id,
+      joinedAtMs: ctx.timestamp.toMillis(),
+    });
   }
 );
 
