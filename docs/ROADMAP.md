@@ -29,7 +29,7 @@ spectator energy regen, auto round-end, contest, pickups, spectator powers,
 by integration or unit tests.
 
 1. **Browser smoke not CI-gated** — run the two-client checklist in `docs/M1_SMOKE_TEST.md`.
-2. **The board draws primitives** — colored diamonds + circles; the Kenney atlas isn't loaded (L3).
+2. **M2B client controls** — Claim/Contest mode toggle and Collect button still open; board click currently auto-routes claim vs contest.
 3. **Judge/resilience and polish** — projector view, refresh/no-leakage acceptance, SFX/mobile, and deployment hardening remain open.
 
 ## Direction
@@ -71,7 +71,7 @@ end → results → rematch.
   - **Remaining M1 gate:** browser smoke per `docs/M1_SMOKE_TEST.md`.
 - **L1 (parallel):** auto-end when `endsAtMs` passes (lazy check in an action reducer, or scheduled
   `tick_round` if the spike holds — `docs/spike-findings.md`). Manual `end_round` stays as fallback.
-- **L3 (parallel, non-blocking):** Rendering **Stage A** — load the Kenney atlas, swap primitives → sprites.
+- **L3 (parallel, non-blocking):** Rendering **Stage A** — Kenney atlas for tiles, tokens, pickups, and fx overlays with primitive fallbacks. _(L3A landed.)_
 - **L4 (parallel, prep):** make `SpectatorBar`/`TauntBubble`/`EventFeed` real components fed by live `events`.
 - **Cut line:** demo with manual `end_round` and Kenney-or-primitive board if needed. Never cut the live adapter + core loop.
 
