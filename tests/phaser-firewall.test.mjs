@@ -39,3 +39,10 @@ test('PhaserGame consumes RenderState, not raw DB rows', () => {
   assert.match(phaserGame, /new Phaser\.Game/);
   assert.match(phaserGame, /game\.destroy\(true\)/);
 });
+
+test('EventBus exposes renderState and tile click events', () => {
+  const eventBus = readFileSync('src/game/EventBus.ts', 'utf8');
+  assert.match(eventBus, /renderState:update/);
+  assert.match(eventBus, /tile:click/);
+  assert.match(eventBus, /GAME_EVENT_NAMES/);
+});
