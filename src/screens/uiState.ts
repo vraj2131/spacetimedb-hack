@@ -8,6 +8,7 @@ import {
 
 export type PlayerRole = 'player' | 'spectator';
 export type RoomState = 'lobby' | 'live' | 'results';
+export type MoveDirection = 'up' | 'down' | 'left' | 'right';
 
 export type ConnectionState = {
   status: 'connected' | 'connecting' | 'disconnected';
@@ -91,6 +92,8 @@ export type MatchViewModel = {
   events: EventItem[];
   recentTaunt: string | null;
   controls: MatchControl[];
+  isHost: boolean;
+  actionStatusLabel: string;
 };
 
 export type ResultsViewModel = {
@@ -132,7 +135,10 @@ export type GameUiActions = {
   onEndRound: (roomId: number) => void;
   onRematch: (roomId: number) => void;
   onBackToLobby: () => void;
+  onReturnToMatch: () => void;
   onReturnToDev: () => void;
+  onMove: (direction: MoveDirection) => void;
+  onClaimTileAt: (x: number, y: number) => void;
 };
 
 const connected: ConnectionState = {
@@ -227,6 +233,8 @@ export function createMockGameUiState(role: PlayerRole = mockRoom.localRole): Ga
             { id: 'contest', label: 'Contest', enabled: true },
             { id: 'collect', label: 'Collect', enabled: true },
           ],
+      isHost: canStartRound,
+      actionStatusLabel: '',
     },
     resultsView: {
       roomId: sourceRoom.id,

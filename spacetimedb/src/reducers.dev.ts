@@ -1,4 +1,4 @@
-import { t } from 'spacetimedb/server';
+import { t, SenderError } from 'spacetimedb/server';
 import spacetimedb from './schema';
 
 /**
@@ -33,7 +33,7 @@ export const setValue = spacetimedb.reducer(
   (ctx, { value }) => {
     const nextValue = value.trim().slice(0, 80);
     if (nextValue.length === 0) {
-      throw new Error('Value cannot be empty');
+      throw new SenderError('Value cannot be empty');
     }
 
     ctx.db.sync_state.id.update({

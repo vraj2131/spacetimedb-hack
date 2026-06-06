@@ -43,20 +43,30 @@ export function LobbyScreen({ viewModel, actions }: LobbyScreenProps) {
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={actions.onReturnToDev}
-              className="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-700"
-            >
-              Dev sync
-            </button>
-            <button
-              type="button"
-              onClick={() => actions.onStartRound(viewModel.roomId)}
-              disabled={!viewModel.canStartRound}
-              className="rounded-md bg-teal-700 px-5 py-3 text-sm font-black uppercase tracking-wide text-white"
-            >
-              Start round
+              {viewModel.roomState === 'live' ? (
+                <button
+                  type="button"
+                  onClick={actions.onReturnToMatch}
+                  className="rounded-md bg-teal-700 px-5 py-3 text-sm font-black uppercase tracking-wide text-white"
+                >
+                  Return to match
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => actions.onStartRound(viewModel.roomId)}
+                  disabled={!viewModel.canStartRound}
+                  className="rounded-md bg-teal-700 px-5 py-3 text-sm font-black uppercase tracking-wide text-white"
+                >
+                  Start round
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={actions.onReturnToDev}
+                className="rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-black uppercase tracking-wide text-slate-700"
+              >
+                Dev sync
               </button>
             </div>
           </section>

@@ -120,6 +120,16 @@ function ownedTileScore(tiles: readonly LiveTileRow[], playerId: number): number
     .reduce((sum, tile) => sum + tile.incomeValue, 0);
 }
 
+function matchActionStatus(connection: ProjectGameUiStateInput['connection']): string {
+  if (connection.isSubmitting) {
+    return 'Submitting action...';
+  }
+  if (connection.actionError) {
+    return connection.actionError;
+  }
+  return '';
+}
+
 function buildConnectionState(
   connection: ProjectGameUiStateInput['connection'],
 ): ConnectionState {
@@ -312,6 +322,8 @@ export function projectGameUiState({
             { id: 'contest', label: 'Contest', enabled: false },
             { id: 'collect', label: 'Collect', enabled: false },
           ],
+      isHost,
+      actionStatusLabel: matchActionStatus(connection),
     },
     resultsView: {
       roomId,

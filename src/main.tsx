@@ -9,13 +9,17 @@ import { DbConnection, ErrorContext } from './module_bindings/index.ts';
 const HOST =
   import.meta.env.VITE_SPACETIMEDB_HOST ?? 'ws://127.0.0.1:3000';
 const DB_NAME = import.meta.env.VITE_SPACETIMEDB_DB_NAME ?? 'bodega-blitz';
-const TOKEN_KEY = `${HOST}/${DB_NAME}/auth_token`;
+const CLIENT_SLOT = new URLSearchParams(window.location.search).get('client');
+const TOKEN_KEY = CLIENT_SLOT
+  ? `${HOST}/${DB_NAME}/auth_token_${CLIENT_SLOT}`
+  : `${HOST}/${DB_NAME}/auth_token`;
 
 const onConnect = (_conn: DbConnection, identity: Identity, token: string) => {
   localStorage.setItem(TOKEN_KEY, token);
   console.log(
     'Connected to SpacetimeDB with identity:',
-    identity.toHexString()
+    identity.toHexString(),
+    CLIENT_SLOT ? `(client=${CLIENT_SLOT})` : '',
   );
 };
 

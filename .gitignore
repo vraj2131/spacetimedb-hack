@@ -4,6 +4,7 @@ dist/
 *.tsbuildinfo
 .env
 .env.local
+.env.production
 .env.*.local
 spacetimedb/node_modules/
 spacetimedb/dist/
