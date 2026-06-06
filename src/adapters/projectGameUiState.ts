@@ -7,6 +7,7 @@ import type {
   ResultRow,
   RoomState,
 } from '../screens/uiState.ts';
+import { resolvePickupIdAt } from './resolvePickupId.ts';
 
 export type LiveRoomRow = {
   readonly id: number;
@@ -68,9 +69,19 @@ export type LiveSpectatorStateRow = {
 export type LivePlayerStateRow = {
   readonly playerId: number;
   readonly roomId: number;
+  readonly x?: number;
+  readonly y?: number;
   readonly cash?: number;
   readonly speedUntilMs: number | bigint;
   readonly disabledUntilMs: number | bigint;
+};
+
+export type LivePickupRow = {
+  readonly id: number;
+  readonly roomId: number;
+  readonly x: number;
+  readonly y: number;
+  readonly active: boolean;
 };
 
 export type ProjectGameUiStateInput = {
@@ -83,6 +94,7 @@ export type ProjectGameUiStateInput = {
   readonly roundResults: readonly LiveRoundResultRow[];
   readonly spectatorStates: readonly LiveSpectatorStateRow[];
   readonly playerStates: readonly LivePlayerStateRow[];
+  readonly pickups: readonly LivePickupRow[];
   readonly localIdentity: { toHexString(): string } | null;
   readonly nowMs: number;
   readonly connection: Pick<ConnectionState, 'isConnected' | 'isSubmitting'> & {
@@ -236,6 +248,7 @@ export function projectGameUiState({
   roundResults,
   spectatorStates,
   playerStates,
+  pickups,
   localIdentity,
   nowMs,
   connection,
@@ -267,6 +280,14 @@ export function projectGameUiState({
   const roomResultRows = roundResults.filter(
     result => result.roomId === roomId && result.roundNumber === roundNumber,
   );
+  const roomPickups = pickups.filter(pickup => pickup.roomId === roomId);
+  const localPickupId =
+    localPlayerState &&
+    localPlayerState.x != null &&
+    localPlayerState.y != null &&
+    roomState === 'live'
+      ? resolvePickupIdAt(roomPickups, roomId, localPlayerState.x, localPlayerState.y)
+      : null;
   const liveStandings = buildLiveStandings(roomPlayers, roomTiles);
   const projectedEvents = buildEvents(roomEvents, nowMs);
   const recentTaunt = newestTaunt(roomTaunts);
@@ -352,8 +373,10 @@ export function projectGameUiState({
       actionStatusLabel: matchActionStatus(connection),
       spectatorEnergy: localSpectatorState?.energy ?? 0,
       localCash: localPlayerState?.cash ?? 0,
-      claimHint: 'Click an adjacent tile to claim it or contest an enemy tile.',
+      claimHint: 'Pick Claim or Contest, then click an adjacent tile.',
       canLeaveRoom,
+      localPickupId,
+      canCollectPickup: localPickupId != null && roomState === 'live' && !isSpectator,
       localPlayerEffects: {
         speedBoost: localPlayerState ? toNumberMs(localPlayerState.speedUntilMs) > nowMs : false,
         stunned: localPlayerState ? toNumberMs(localPlayerState.disabledUntilMs) > nowMs : false,

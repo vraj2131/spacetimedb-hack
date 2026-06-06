@@ -100,6 +100,8 @@ export type MatchViewModel = {
   localCash: number;
   claimHint: string;
   canLeaveRoom: boolean;
+  localPickupId: number | null;
+  canCollectPickup: boolean;
   localPlayerEffects: { speedBoost: boolean; stunned: boolean };
 };
 
@@ -150,6 +152,8 @@ export type GameUiActions = {
   onReturnToDev: () => void;
   onMove: (direction: MoveDirection) => void;
   onClaimTileAt: (x: number, y: number) => void;
+  onContestTileAt: (x: number, y: number) => void;
+  onCollectPickupAt: (x: number, y: number) => void;
   onContestTile: (tileId: number) => void;
   onCollectPickup: (pickupId: number) => void;
   onSpectatorEvent: (eventType: string, targetPlayerId?: number, targetTileId?: number) => void;
@@ -255,8 +259,10 @@ export function createMockGameUiState(role: PlayerRole = mockRoom.localRole): Ga
       actionStatusLabel: '',
       spectatorEnergy: isSpectator ? 10 : 0,
       localCash: 12,
-      claimHint: 'Click an adjacent tile to claim it or contest an enemy tile.',
+      claimHint: 'Pick Claim or Contest, then click an adjacent tile.',
       canLeaveRoom,
+      localPickupId: null,
+      canCollectPickup: false,
       localPlayerEffects: { speedBoost: false, stunned: false },
     },
     resultsView: {

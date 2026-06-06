@@ -75,12 +75,14 @@ Hard-reload both tabs (`Cmd+Shift+R`) if you recently reset the database.
 | 4 | Guest | Enter name, choose **player**, enter host's room code, **Join** | Guest Lobby; roster shows both players |
 | 5 | Host | **Start round** | Both auto-route to Match |
 | 6 | Both | Use move pad (Up/Down/Left/Right) | Tokens move; no persistent action error |
-| 7 | Both | Click an **adjacent non-alley** tile on the board | Tile ownership color updates on **both** clients |
-| 8 | Both | Check HUD event feed | Claim event appears |
-| 9 | Host | **End round** | Both auto-route to Results |
-| 10 | Both | Review scoreboard | Rows match server `round_results` (winner/scores agree) |
-| 11 | Host | **Rematch** | Both return to Lobby; room state is lobby |
-| 12 | Optional | Host **Start round** again | Second round playable |
+| 7 | Both | **Claim** mode: click an **adjacent non-alley** tile | Tile ownership color updates on **both** clients |
+| 8 | Guest | Switch to **Contest**, click adjacent **enemy-owned** tile | Ownership flips to guest on both clients; contest event in HUD |
+| 9 | Either | Move onto a pickup cell, click **Collect** (or walk onto it to auto-collect) | Pickup disappears; cash/speed/shield applies; collect event in HUD |
+| 10 | Both | Check HUD event feed | Claim/contest/collect events appear |
+| 11 | Both | Wait for timer expiry (~90s) or host **End round** | Both auto-route to Results (scheduled tick also finalizes live rooms) |
+| 12 | Both | Review scoreboard | Rows match server `round_results` (tile income + pickups + bonus) |
+| 13 | Host | **Rematch** | Both return to Lobby; room state is lobby |
+| 14 | Optional | Host **Start round** again | Second round playable |
 
 ---
 
@@ -88,9 +90,11 @@ Hard-reload both tabs (`Cmd+Shift+R`) if you recently reset the database.
 
 - **Join:** connection label shows connected (not stuck waiting).
 - **Lobby:** roster updates when guest joins; host-only **Start round** enabled when ready.
-- **Match:** live board shows player tokens and tile ownership colors (primitives, not Kenney sprites yet).
-- **Match HUD:** timer label ticks from `endsAtMs`; standings reflect owned tiles.
-- **Claim:** event feed receives a claim line; adjacent-only rejects show a readable action error.
+- **Match:** live board shows Kenney atlas sprites (tiles, tokens, pickups) with primitive fallbacks if atlas load fails.
+- **Match HUD:** timer label ticks from `endsAtMs`; standings reflect owned tiles; cash stash shows live pickup earnings.
+- **Claim / Contest:** use the mode toggle; claim only hits open/adjacent tiles; contest targets adjacent enemy tiles.
+- **Collect:** button enabled when standing on an active pickup; walk-on also auto-collects via server.
+- **Leave room:** non-host players can leave from Lobby/Match/Results; host can close from Lobby/Results.
 - **Results:** `round_results` rows drive the scoreboard; host **Rematch** enabled in results state.
 
 ---
@@ -116,9 +120,11 @@ See also [docs/TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 - [x] Host creates room; guest joins by code
 - [x] Host starts round; both route to Match
 - [x] Move buttons call live movement on both clients
-- [x] Board click claims adjacent tile and updates both clients
-- [x] Host ends round; both route to Results with server score rows
-- [x] Host rematches; both return to Lobby
+- [ ] Board **Claim** mode claims adjacent tile and updates both clients
+- [ ] **Contest** mode flips adjacent enemy tile on both clients
+- [ ] **Collect** pickup while standing on cell (button or walk-on)
+- [ ] Round auto-ends at timer (or host **End round**); both route to Results with server score rows
+- [ ] Host rematches; both return to Lobby
 
 When all boxes pass, M1 live wiring is verified for demo.
 

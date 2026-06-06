@@ -39,8 +39,12 @@ test('Dev E adapter exposes backend handoff view models and actions', () => {
     'canLeaveRoom',
     'localCash',
     'claimHint',
+    'localPickupId',
+    'canCollectPickup',
     'onMove',
     'onClaimTileAt',
+    'onContestTileAt',
+    'onCollectPickupAt',
     'onLeaveRoom',
     'onCloseRoom',
     'actionStatusLabel',
@@ -74,7 +78,9 @@ test('player-facing screens expose leave-close flow and claim guidance', () => {
 
   assert.match(lobby, /Close room|Leave room/);
   assert.match(match, /Leave room/);
-  assert.match(match, /adjacent tile/i);
+  assert.match(match, /Claim/);
+  assert.match(match, /Contest/);
+  assert.match(match, /Collect/);
   assert.match(results, /Close room|Leave room/);
   assert.doesNotMatch(results, /Back to lobby/);
 });
