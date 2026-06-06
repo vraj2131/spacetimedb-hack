@@ -10,3 +10,8 @@ spacetimedb/dist/
 
 # Generated SpacetimeDB client bindings — run `npm run spacetime:generate` to (re)create.
 src/module_bindings/
+
+.agents/
+
+skills-lock.json
+
