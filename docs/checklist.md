@@ -2,7 +2,7 @@
 
 Living progress tracker for the project. Check items off as they land (`- [x]`). Leave pending items unchecked (`- [ ]`).
 
-Last updated: June 6, 2026 (Wave 0 — Dev A spine merged; Dev C spikes verified)
+Last updated: June 6, 2026 (Wave 0 complete — spine + mocked UI [Dev E] + assets/flavor stubs [Dev D] merged; spikes verified. Entering Wave 1 — room sync.)
 
 ---
 
@@ -37,7 +37,7 @@ Goal: every teammate can clone, connect locally, and prove shared state sync bef
 - [x] `phaser@4.1.0` installed
 - [x] Phaser import verified in client (`DevSync` mounts `PhaserGame`)
 - [x] `PhaserGame.tsx` mounts a live Phaser canvas
-- [ ] React ↔ Phaser `EventBus` bridge
+- [x] React ↔ Phaser `EventBus` bridge
 
 ### Styling
 
@@ -55,7 +55,7 @@ Goal: every teammate can clone, connect locally, and prove shared state sync bef
 - [x] `docs/spike-findings.md` — Dev C filtered `useTable` + scheduled `round_tick` findings
 - [ ] `ARCHITECTURE.md`
 - [ ] `DEMO.md`
-- [ ] `ASSETS.md`
+- [x] `ASSETS.md`
 
 ### Team verification (manual)
 
@@ -130,19 +130,19 @@ From `bodega-blitz-cursor-brief.md`. Each slice must run before the next begins.
 
 ### Slice 8 — Phaser sprites
 
-- [ ] Texture atlas in `public/assets/`
+- [x] Texture atlas in `public/assets/` — _Dev D shipped `game.png` + `game.json` (17 frames); `BoardScene` does not load it yet_
 - [ ] Replace rectangles with tile / token / pickup sprites
 - [ ] Effect overlays (spill, shield, speed)
 - [ ] Idle / walk animations (if time)
 
 ### Slice 9 — LLM flavor
 
-- [ ] `agents/phrases.json` static fallback
-- [ ] `agents/run-flavor.ts` worker
+- [x] `agents/phrases.json` static fallback
+- [x] `agents/run-flavor.ts` worker — _stub; standalone dry-run passes (4 taunts + 1 recap via static), no STDB wiring yet_
 - [ ] `post_taunt` reducer + `TauntBubble` component
 - [ ] Game fully playable with empty `.env`
-- [ ] Groq provider (`llama-3.1-8b-instant`)
-- [ ] Gemini provider (`gemini-2.5-flash-lite`)
+- [x] Groq provider (`llama-3.1-8b-instant`) — _provider stub present; live model smoke test pending (see Open spikes)_
+- [x] Gemini provider (`gemini-2.5-flash-lite`) — _provider stub present; live model smoke test pending (see Open spikes)_
 - [ ] Announcer recap on results screen
 
 ### Slice 10 — Polish
