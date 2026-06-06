@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scaffold-gate:
+    name: Scaffold gate (build · generate · typecheck · test)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            spacetimedb/package-lock.json
+
+      - name: Install client dependencies
+        run: npm ci
+
+      - name: Install SpacetimeDB module dependencies
+        run: npm ci --prefix spacetimedb
+
+      - name: Install SpacetimeDB CLI
+        run: |
+          curl -sSf https://install.spacetimedb.com | sh -s -- --yes
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: SpacetimeDB CLI version
+        run: spacetime version
+
+      # Bindings are generated, not committed (see .gitignore). Building the
+      # module + regenerating must happen before tsc / vite build.
+      - name: Generate module bindings
+        run: npm run spacetime:generate
+
+      - name: Build (tsc -b && vite build)
+        run: npm run build
+
+      - name: Scaffold round-trip check
+        run: npm test
